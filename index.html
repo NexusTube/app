@@ -2,8 +2,16 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#06b6d4">
+    <meta name="description" content="NexusTube - Reproductor de video Next-Gen con búsqueda integrada">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NexusTube">
     <title>NexusTube - Next-Gen Player</title>
+    <link rel="manifest" id="manifestLink">
+    <link rel="icon" id="faviconLink" type="image/svg+xml">
     <style>
         :root {
             --bg-color: #030712;
@@ -30,22 +38,25 @@
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(147, 51, 234, 0.08) 0%, transparent 40%);
         }
 
+        /* ---------- HEADER (FIX: ahora envuelve y se adapta) ---------- */
         header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 1rem;
             padding: 1rem 2rem;
             border-bottom: 1px solid var(--border);
-            background: rgba(3, 7, 18, 0.8);
+            background: rgba(3, 7, 18, 0.85);
             backdrop-filter: blur(12px);
             position: sticky;
             top: 0;
             z-index: 100;
+            flex-wrap: wrap;
+            width: 100%;
         }
 
         .logo {
@@ -56,6 +67,8 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            flex-shrink: 0;
+            user-select: none;
         }
 
         .logo span {
@@ -66,13 +79,14 @@
         .search-container {
             display: flex;
             gap: 0.5rem;
-            width: 100%;
-            max-width: 600px;
-            margin: 0 1rem;
+            flex: 1 1 300px;
+            min-width: 0;
+            max-width: 700px;
         }
 
         .search-input {
-            flex: 1;
+            flex: 1 1 auto;
+            min-width: 0;
             background: var(--panel-bg);
             border: 1px solid var(--border);
             padding: 0.75rem 1rem;
@@ -88,6 +102,10 @@
             box-shadow: 0 0 15px var(--accent-glow);
         }
 
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
         .btn {
             background: linear-gradient(135deg, #0891b2, #06b6d4);
             color: white;
@@ -98,12 +116,34 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+            white-space: nowrap;
+            font-size: 0.95rem;
         }
 
         .btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 6px 20px var(--accent-glow);
         }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: none;
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: none;
+        }
+
+        #installBtn { display: none; }
+        #installBtn.visible { display: inline-flex; }
 
         main {
             flex: 1;
@@ -123,16 +163,25 @@
             }
         }
 
+        @media (max-width: 640px) {
+            header { padding: 0.75rem 1rem; gap: 0.5rem; }
+            .logo { font-size: 1.15rem; }
+            .search-container { flex-basis: 100%; max-width: 100%; }
+            .btn { padding: 0.7rem 1rem; font-size: 0.9rem; }
+            main { padding: 0.75rem; }
+        }
+
         .player-section {
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            min-width: 0;
         }
 
         .video-wrapper {
             position: relative;
             width: 100%;
-            padding-top: 56.5%; /* 16:9 Aspect Ratio */
+            padding-top: 56.25%;
             background: #000;
             border-radius: 12px;
             overflow: hidden;
@@ -166,6 +215,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            flex-wrap: wrap;
         }
 
         label {
@@ -178,6 +228,7 @@
 
         input[type="range"] {
             -webkit-appearance: none;
+            appearance: none;
             width: 120px;
             background: rgba(255,255,255,0.1);
             height: 6px;
@@ -195,6 +246,15 @@
             box-shadow: 0 0 8px var(--accent);
         }
 
+        input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border: none;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+
         .download-panel {
             background: var(--panel-bg);
             backdrop-filter: blur(10px);
@@ -206,20 +266,15 @@
             gap: 1rem;
         }
 
+        .download-panel h3 { font-size: 1rem; }
+
         .download-buttons {
             display: flex;
             gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        .download-buttons .btn {
-            flex: 1;
-            text-align: center;
-            text-decoration: none;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-        }
+        .download-buttons .btn { flex: 1 1 200px; }
 
         .playlist-sidebar {
             background: var(--panel-bg);
@@ -227,7 +282,7 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
-            max-height: 700px;
+            max-height: 750px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -238,6 +293,11 @@
             font-size: 1.1rem;
             border-bottom: 1px solid var(--border);
             padding-bottom: 0.5rem;
+            position: sticky;
+            top: -1.5rem;
+            background: var(--panel-bg);
+            padding-top: 0.25rem;
+            z-index: 2;
         }
 
         .video-item {
@@ -249,16 +309,19 @@
             transition: background 0.2s;
         }
 
-        .video-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
+        .video-item:hover { background: rgba(255, 255, 255, 0.05); }
+        .video-item.active { background: rgba(6, 182, 212, 0.15); }
 
         .video-item img {
             width: 100px;
             height: 60px;
             object-fit: cover;
             border-radius: 4px;
+            flex-shrink: 0;
+            background: #111;
         }
+
+        .video-item-info { min-width: 0; }
 
         .video-item-info h4 {
             font-size: 0.9rem;
@@ -272,13 +335,48 @@
             font-size: 0.75rem;
             color: var(--text-muted);
             margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* Estilo para Smart TV y controles remotos */
-        button:focus, input:focus {
+        .loading-msg, .empty-msg {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(150%);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--accent);
+            color: var(--text-main);
+            padding: 0.85rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            transition: transform 0.35s ease;
+            z-index: 999;
+            max-width: 90vw;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        button:focus-visible, input:focus-visible, a:focus-visible {
             outline: 2px solid var(--accent);
             outline-offset: 2px;
         }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(6, 182, 212, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(6, 182, 212, 0.5); }
     </style>
 </head>
 <body>
@@ -286,199 +384,536 @@
     <header>
         <div class="logo">NEXUS<span>TUBE</span></div>
         <div class="search-container">
-            <input type="text" id="searchInput" class="search-input" placeholder="Pega el link de YouTube o busca un video..." value="https://www.youtube.com/watch?v=jfKfPfyJRdk">
+            <input type="text" id="searchInput" class="search-input"
+                   placeholder="Busca por nombre o pega un link de YouTube...">
             <button class="btn" id="loadBtn">Cargar</button>
         </div>
+        <button class="btn btn-secondary" id="installBtn">📲 Instalar App</button>
     </header>
 
     <main>
         <div class="player-section">
             <div class="video-wrapper" id="videoWrapper">
-                <!-- El iframe de YouTube se inyectará dinámicamente o por API Iframe -->
                 <div id="player"></div>
             </div>
 
             <div class="controls-bar">
                 <div class="control-group">
-                    <label for="volumeRange">Volumen (Amplificado):</label>
-                    <input type="range" id="volumeRange" min="0" max="500" value="100">
+                    <label for="volumeRange">Volumen:</label>
+                    <input type="range" id="volumeRange" min="0" max="100" value="100">
                     <span id="volumeVal">100%</span>
                 </div>
                 <div class="control-group">
-                    <button class="btn" id="fsBtn">Pantalla Completa Automática</button>
+                    <button class="btn btn-secondary" id="fsBtn">⛶ Pantalla Completa</button>
                 </div>
             </div>
 
             <div class="download-panel">
-                <h3>Descargas Multimedia (Alta Velocidad)</h3>
+                <h3>Descargas Multimedia</h3>
                 <div class="download-buttons">
-                    <a href="#" id="dlMp3" class="btn" target="_blank" rel="noopener">📥 Descargar MP3 (Audio)</a>
-                    <a href="#" id="dlMp4" class="btn" target="_blank" rel="noopener">📥 Descargar MP4 (Video)</a>
+                    <button id="dlMp3" class="btn">📥 Descargar MP3 (Audio)</button>
+                    <button id="dlMp4" class="btn">📥 Descargar MP4 (Video)</button>
                 </div>
             </div>
         </div>
 
         <aside class="playlist-sidebar">
-            <h3>Sugerencias / Tendencias</h3>
+            <h3 id="sidebarTitle">🔥 Tendencias</h3>
             <div id="suggestionsList">
-                <!-- Se llenará con JS -->
+                <div class="loading-msg">Cargando tendencias...</div>
             </div>
         </aside>
     </main>
 
-    <!-- YouTube IFrame API -->
+    <div class="toast" id="toast"></div>
+
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        let player;
-        let currentVideoId = 'jfKfPfyJRdk'; // Lo-Fi Girl por defecto (rápido y liviano)
-        let audioCtx, gainNode, sourceNode;
+    /* ============================================================
+       1. PWA (manifest + service worker + install prompt)
+       ============================================================ */
+    (function setupPWA() {
+        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+            <rect width="512" height="512" rx="96" fill="#030712"/>
+            <polygon points="200,150 380,256 200,362" fill="#06b6d4"/>
+            <text x="256" y="460" text-anchor="middle" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#f8fafc">NEXUS</text>
+        </svg>`;
+        const iconDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
 
-        // Extraer ID de YouTube desde URL o texto de búsqueda
-        function extractVideoId(urlOrId) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = urlOrId.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : urlOrId;
-        }
+        // favicon
+        document.getElementById('faviconLink').href = iconDataUrl;
 
-        function onYouTubeIframeAPIReady() {
-            initPlayer(currentVideoId);
-        }
+        const manifest = {
+            name: 'NexusTube',
+            short_name: 'NexusTube',
+            description: 'Reproductor de video Next-Gen con búsqueda integrada',
+            start_url: location.pathname,
+            scope: './',
+            display: 'standalone',
+            orientation: 'any',
+            background_color: '#030712',
+            theme_color: '#06b6d4',
+            lang: 'es',
+            icons: [
+                { src: iconDataUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
+                { src: iconDataUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+            ]
+        };
 
-        function initPlayer(videoId) {
-            currentVideoId = extractVideoId(videoId);
-            updateDownloadLinks(currentVideoId);
+        // Manifest como data URL (funciona para "añadir a inicio" en la mayoría de navegadores)
+        const manifestURL = 'data:application/manifest+json;charset=utf-8,' +
+                            encodeURIComponent(JSON.stringify(manifest));
+        document.getElementById('manifestLink').href = manifestURL;
 
-            if (player) {
-                player.loadVideoById(currentVideoId);
-                return;
-            }
-
-            player = new YT.Player('player', {
-                videoId: currentVideoId,
-                playerVars: {
-                    'autoplay': 1,
-                    'controls': 1,
-                    'modestbranding': 1,
-                    'rel': 0,
-                    'iv_load_policy': 3
-                },
-                events: {
-                    'onReady': onPlayerReady
-                }
-            });
-        }
-
-        function onPlayerReady(event) {
-            setupVolumeAmplifier();
-        }
-
-        // Configuración de Web Audio API para lograr el 500% de volumen real
-        function setupVolumeAmplifier() {
+        // Intentar registrar Service Worker desde Blob URL (soporte limitado)
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', e => self.skipWaiting());
+                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                self.addEventListener('fetch', e => {
+                    if (e.request.method !== 'GET') return;
+                    e.respondWith(
+                        caches.match(e.request).then(cached => cached || fetch(e.request)
+                            .then(res => {
+                                try {
+                                    const u = new URL(e.request.url);
+                                    if (res.ok && u.origin === location.origin) {
+                                        const clone = res.clone();
+                                        caches.open('nexustube-v1').then(c => c.put(e.request, clone));
+                                    }
+                                } catch(_){}
+                                return res;
+                            })
+                            .catch(() => caches.match('./'))
+                        )
+                    );
+                });
+            `;
             try {
-                const iframe = document.getElementById('player');
-                // Nota: Por políticas CORS de navegadores modernos, conectar el iframe directamente 
-                // a un AudioContext puede requerir interacción de usuario o usar controles alternativos.
-                // Sin embargo, asignamos el volumen nativo de YT al 100 y manejamos el multiplicador.
-            } catch(e) {
-                console.log("AudioContext restricted or handled natively");
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('[PWA] Service Worker registrado'))
+                    .catch(err => console.log('[PWA] SW no registrado:', err.message));
+            } catch (e) {
+                console.log('[PWA] Blob SW no soportado en este navegador');
             }
         }
 
-        // Control deslizante de volumen amplificado hasta 500%
-        const volumeRange = document.getElementById('volumeRange');
-        const volumeVal = document.getElementById('volumeVal');
-
-        volumeRange.addEventListener('input', (e) => {
-            const val = e.target.value;
-            volumeVal.innerText = val + '%';
-            if (player && player.setVolume) {
-                // YouTube acepta de 0 a 100. Para simular hasta 500%, escalamos o aplicamos ganancia si el navegador lo permite
-                const ytVol = Math.min(val, 100);
-                player.setVolume(ytVol);
-                
-                // Si el usuario sube de 100%, informamos visualmente de la sobreamplificación digital
-                if(val > 100) {
-                    // Multiplicador avanzado de ganancia por software si estuviera expuesto el elemento media
-                }
-            }
+        // Prompt de instalación
+        let deferredPrompt = null;
+        const installBtn = document.getElementById('installBtn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.add('visible');
         });
-
-        // Manejador de búsqueda / carga de links
-        document.getElementById('loadBtn').addEventListener('click', () => {
-            const query = document.getElementById('searchInput').value;
-            initPlayer(query);
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            try { await deferredPrompt.userChoice; } catch(_) {}
+            deferredPrompt = null;
+            installBtn.classList.remove('visible');
         });
-
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const query = document.getElementById('searchInput').value;
-                initPlayer(query);
-            }
+        window.addEventListener('appinstalled', () => {
+            installBtn.classList.remove('visible');
+            showToast('✅ App instalada correctamente');
         });
+    })();
 
-        // Actualizar links de descarga con APIs públicas directas y seguras
-        function updateDownloadLinks(id) {
-            // Usamos servicios API públicos estándar para descarga rápida
-            document.getElementById('dlMp3').href = `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${id}&f=mp3`;
-            document.getElementById('dlMp4').href = `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${id}&f=mp4`;
-        }
+    /* ============================================================
+       2. Utilidades
+       ============================================================ */
+    const $ = (id) => document.getElementById(id);
 
-        // Rotación automática a pantalla completa en móviles y tablets
-        const fsBtn = document.getElementById('fsBtn');
-        const videoWrapper = document.getElementById('videoWrapper');
+    function escapeHtml(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+        })[c]);
+    }
 
-        fsBtn.addEventListener('click', async () => {
-            try {
-                if (!document.fullscreenElement) {
-                    if (videoWrapper.requestFullscreen) {
-                        await videoWrapper.requestFullscreen();
-                    } else if (videoWrapper.webkitRequestFullscreen) {
-                        await videoWrapper.webkitRequestFullscreen();
-                    }
-                    
-                    // Intentar rotar la pantalla automáticamente a modo horizontal (Landscape) en dispositivos móviles compatibles
-                    if (screen.orientation && screen.orientation.lock) {
-                        screen.orientation.lock('landscape').catch(err => {
-                            console.log("Bloqueo de orientación no soportado o denegado por el navegador:", err);
-                        });
-                    }
-                } else {
-                    if (document.exitFullscreen) {
-                        await document.exitFullscreen();
-                    }
-                    if (screen.orientation && screen.orientation.unlock) {
-                        screen.orientation.unlock();
-                    }
-                }
-            } catch (err) {
-                console.error("Error al activar pantalla completa:", err);
-            }
-        });
+    function showToast(msg, ms = 3000) {
+        const t = $('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => t.classList.remove('show'), ms);
+    }
 
-        // Lista de sugerencias dinámicas rápidas
-        const suggestions = [
-            { id: 'jfKfPfyJRdk', title: 'Lofi Hip Hop Radio - Beats to Relax/Study to', channel: 'Lofi Girl' },
-            { id: '5qap5aO4i9A', title: 'Lofi Hip Hop Radio - Live 24/7', channel: 'Lofi Girl' },
-            { id: 'nYh-n7EOtMA', title: 'Chillhop Radio - Jazzy & Lofi Hip Hop Beats', channel: 'Chillhop Music' }
+    // Extrae el ID de un input (URL, texto con URL, o ID directo)
+    function parseVideoId(input) {
+        if (!input) return null;
+        input = input.trim();
+        // ID directo (11 caracteres válidos)
+        if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+        // URL de YouTube
+        const patterns = [
+            /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+            /[?&]v=([a-zA-Z0-9_-]{11})/
         ];
+        for (const p of patterns) {
+            const m = input.match(p);
+            if (m && m[1]) return m[1];
+        }
+        return null;
+    }
 
-        const suggestionsList = document.getElementById('suggestionsList');
-        suggestions.forEach(item => {
+    function extractIdFromUrl(path) {
+        if (!path) return null;
+        const m = path.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+        if (m) return m[1];
+        const m2 = path.match(/([a-zA-Z0-9_-]{11})(?:[?&]|$)/);
+        return m2 ? m2[1] : null;
+    }
+
+    /* ============================================================
+       3. Reproductor YouTube
+       ============================================================ */
+    let player = null;
+    let currentVideoId = 'jfKfPfyJRdk'; // Lofi Girl
+
+    window.onYouTubeIframeAPIReady = function () {
+        player = new YT.Player('player', {
+            videoId: currentVideoId,
+            playerVars: {
+                'autoplay': 0,
+                'controls': 1,
+                'modestbranding': 1,
+                'rel': 0,
+                'iv_load_policy': 3,
+                'playsinline': 1
+            },
+            events: {
+                'onReady': (e) => {
+                    e.target.setVolume(100);
+                },
+                'onError': (e) => {
+                    console.warn('[YT] Error', e.data);
+                    showToast('⚠️ No se pudo reproducir este video');
+                }
+            }
+        });
+    };
+
+    function loadVideo(videoId) {
+        const id = parseVideoId(videoId);
+        if (!id) {
+            showToast('❌ ID o link de YouTube inválido');
+            return;
+        }
+        currentVideoId = id;
+        highlightActiveItem(id);
+
+        if (player && player.loadVideoById) {
+            player.loadVideoById(id);
+        }
+    }
+
+    /* ============================================================
+       4. Piped API: búsqueda + tendencias (multi-instancia)
+       ============================================================ */
+    const PIPED_INSTANCES = [
+        'https://pipedapi.kavin.rocks',
+        'https://pipedapi.adminforge.de',
+        'https://api.piped.private.coffee',
+        'https://pipedapi.reallyaweso.me',
+        'https://pipedapi.drgns.space',
+        'https://pipedapi.leptons.xyz'
+    ];
+
+    async function pipedFetch(path, timeoutMs = 8000) {
+        const errors = [];
+        for (const base of PIPED_INSTANCES) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+            try {
+                const res = await fetch(base + path, { signal: ctrl.signal });
+                clearTimeout(timer);
+                if (!res.ok) { errors.push(`${base}: HTTP ${res.status}`); continue; }
+                return await res.json();
+            } catch (err) {
+                clearTimeout(timer);
+                errors.push(`${base}: ${err.message}`);
+            }
+        }
+        console.warn('Piped falló en todas las instancias:', errors);
+        throw new Error('Servidores de búsqueda no disponibles');
+    }
+
+    /* ============================================================
+       5. Render de resultados en la barra lateral
+       ============================================================ */
+    function renderResults(items, titleText) {
+        const list = $('suggestionsList');
+        const title = $('sidebarTitle');
+        if (titleText) title.textContent = titleText;
+
+        list.innerHTML = '';
+        if (!Array.isArray(items) || items.length === 0) {
+            list.innerHTML = '<div class="empty-msg">Sin resultados. Intenta otra búsqueda.</div>';
+            return;
+        }
+
+        items.forEach(item => {
+            const id = extractIdFromUrl(item.url);
+            if (!id) return;
+
             const div = document.createElement('div');
             div.className = 'video-item';
+            div.dataset.videoId = id;
+
+            const thumb = item.thumbnail ||
+                `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+
             div.innerHTML = `
-                <img src="https://img.youtube.com/vi/${item.id}/hqdefault.jpg" alt="${item.title}">
+                <img src="${escapeHtml(thumb)}" alt="" loading="lazy"
+                     onerror="this.src='https://img.youtube.com/vi/${id}/mqdefault.jpg'">
                 <div class="video-item-info">
-                    <h4>${item.title}</h4>
-                    <p>${item.channel}</p>
+                    <h4>${escapeHtml(item.title || 'Sin título')}</h4>
+                    <p>${escapeHtml(item.uploaderName || item.uploader || '')}</p>
                 </div>
             `;
+
             div.addEventListener('click', () => {
-                document.getElementById('searchInput').value = `https://www.youtube.com/watch?v=${item.id}`;
-                initPlayer(item.id);
+                loadVideo(id);
+                highlightActiveItem(id);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             });
-            suggestionsList.appendChild(div);
+
+            list.appendChild(div);
         });
+
+        highlightActiveItem(currentVideoId);
+    }
+
+    function highlightActiveItem(id) {
+        document.querySelectorAll('.video-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.videoId === id);
+        });
+    }
+
+    /* ============================================================
+       6. Tendencias iniciales
+       ============================================================ */
+    const FALLBACK_TRENDING = [
+        { id: 'jfKfPfyJRdk', title: 'Lofi Hip Hop Radio - Beats to Relax/Study to', uploader: 'Lofi Girl' },
+        { id: 'dQw4w9WgXcQ', title: 'Rick Astley - Never Gonna Give You Up', uploader: 'Rick Astley' },
+        { id: '9bZkp7q19f0', title: 'PSY - GANGNAM STYLE', uploader: 'officialpsy' },
+        { id: 'kJQP7kiw5Fk', title: 'Luis Fonsi - Despacito ft. Daddy Yankee', uploader: 'Luis Fonsi' }
+    ];
+
+    async function loadTrending() {
+        try {
+            const data = await pipedFetch('/trending?region=US');
+            const items = Array.isArray(data) ? data : (data.items || []);
+            if (items.length > 0) {
+                renderResults(items.slice(0, 20), '🔥 Tendencias');
+                return;
+            }
+            throw new Error('Sin datos');
+        } catch (err) {
+            console.warn('Tendencias fallaron, usando fallback:', err.message);
+            const fallback = FALLBACK_TRENDING.map(v => ({
+                url: '/watch?v=' + v.id,
+                title: v.title,
+                uploaderName: v.uploader,
+                thumbnail: `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`
+            }));
+            renderResults(fallback, '🔥 Sugerencias');
+        }
+    }
+
+    /* ============================================================
+       7. Búsqueda
+       ============================================================ */
+    async function performSearch(query) {
+        query = (query || '').trim();
+        if (!query) {
+            showToast('Escribe un nombre de video o pega un link');
+            return;
+        }
+
+        // Si es URL o ID, reproducir directamente
+        const directId = parseVideoId(query);
+        if (directId) {
+            loadVideo(directId);
+            showToast('▶️ Video cargado');
+            return;
+        }
+
+        // Búsqueda por nombre
+        const list = $('suggestionsList');
+        $('sidebarTitle').textContent = `🔎 Resultados: "${query}"`;
+        list.innerHTML = '<div class="loading-msg">Buscando...</div>';
+
+        try {
+            const data = await pipedFetch('/search?q=' + encodeURIComponent(query) + '&filter=videos');
+            const items = data.items || [];
+            renderResults(items.slice(0, 25), `🔎 Resultados: "${query}"`);
+            if (items.length === 0) {
+                showToast('No se encontraron resultados');
+            }
+        } catch (err) {
+            list.innerHTML = `<div class="empty-msg">
+                ❌ Servidores de búsqueda no disponibles ahora mismo.<br>
+                Intenta de nuevo en unos segundos o pega un link directo.
+            </div>`;
+        }
+    }
+
+    /* ============================================================
+       8. Descargas (Cobalt API + fallback)
+       ============================================================ */
+    const COBALT_ENDPOINTS = [
+        'https://api.cobalt.tools/',
+        'https://cobalt-api.kwiatekmiki.com/',
+        'https://cobalt-api.meowing.de/',
+        'https://cobalt-api.ayo.tf/'
+    ];
+
+    async function tryCobalt(videoId, mode) {
+        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        const bodies = [
+            // API nueva (v10)
+            {
+                url: videoUrl,
+                videoQuality: '720',
+                downloadMode: mode === 'audio' ? 'audio' : 'auto',
+                audioFormat: 'mp3',
+                filenameStyle: 'basic'
+            },
+            // API antigua (v7)
+            { url: videoUrl, isAudioOnly: mode === 'audio' }
+        ];
+
+        for (const ep of COBALT_ENDPOINTS) {
+            for (const body of bodies) {
+                try {
+                    const ctrl = new AbortController();
+                    const timer = setTimeout(() => ctrl.abort(), 12000);
+                    const res = await fetch(ep, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(body),
+                        signal: ctrl.signal
+                    });
+                    clearTimeout(timer);
+                    if (!res.ok) continue;
+
+                    const data = await res.json();
+                    if (data.status === 'error' || data.error) continue;
+                    if (data.url) return data.url;
+                    if (data.status === 'tunnel' && data.url) return data.url;
+                } catch (_) { /* siguiente */ }
+            }
+        }
+        return null;
+    }
+
+    async function handleDownload(mode, btn) {
+        if (!currentVideoId) {
+            showToast('Primero carga un video');
+            return;
+        }
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '⏳ Preparando descarga...';
+
+        try {
+            const url = await tryCobalt(currentVideoId, mode);
+
+            if (url) {
+                btn.textContent = '✅ Iniciando...';
+                // Abrir en nueva pestaña para evitar bloqueos del navegador
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                showToast('✅ Descarga iniciada');
+            } else {
+                // Fallback público que genera botón de descarga
+                const fallback = mode === 'audio'
+                    ? `https://yt-download.org/api/button/mp3/${currentVideoId}`
+                    : `https://yt-download.org/api/button/mp4/${currentVideoId}`;
+                window.open(fallback, '_blank', 'noopener');
+                showToast('↗️ Abriendo generador de descarga alternativo');
+            }
+        } catch (err) {
+            console.error('Download error:', err);
+            showToast('❌ No se pudo preparar la descarga');
+        } finally {
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }, 1500);
+        }
+    }
+
+    /* ============================================================
+       9. Eventos UI
+       ============================================================ */
+    $('loadBtn').addEventListener('click', () => {
+        performSearch($('searchInput').value);
+    });
+
+    $('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            performSearch($('searchInput').value);
+        }
+    });
+
+    // Volumen
+    const volumeRange = $('volumeRange');
+    const volumeVal = $('volumeVal');
+    volumeRange.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        volumeVal.textContent = val + '%';
+        if (player && player.setVolume) {
+            try { player.setVolume(val); } catch (_) {}
+        }
+    });
+
+    // Pantalla completa + orientación
+    const fsBtn = $('fsBtn');
+    const videoWrapper = $('videoWrapper');
+    fsBtn.addEventListener('click', async () => {
+        try {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (videoWrapper.requestFullscreen) {
+                    await videoWrapper.requestFullscreen();
+                } else if (videoWrapper.webkitRequestFullscreen) {
+                    videoWrapper.webkitRequestFullscreen();
+                }
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } else {
+                if (document.exitFullscreen) await document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }
+        } catch (err) {
+            console.warn('Fullscreen error:', err);
+        }
+    });
+
+    // Descargas
+    $('dlMp3').addEventListener('click', (e) => handleDownload('audio', e.currentTarget));
+    $('dlMp4').addEventListener('click', (e) => handleDownload('video', e.currentTarget));
+
+    /* ============================================================
+       10. Arranque
+       ============================================================ */
+    loadTrending();
     </script>
 </body>
 </html>
