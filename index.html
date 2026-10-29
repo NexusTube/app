@@ -44,6 +44,8 @@ header{display:flex;align-items:center;gap:1rem;padding:1rem 2rem;border-bottom:
 .icon-btn:hover{background:rgba(6,182,212,.2);border-color:var(--accent)}
 .icon-btn:disabled{opacity:.35;cursor:not-allowed}
 #installBtn{display:none}#installBtn.visible{display:inline-flex}
+#dlBtn{display:none;}
+#dlBtn.visible{display:inline-flex;}
 .platforms-bar{display:flex;gap:.35rem;padding:.5rem 2rem;overflow-x:auto;background:rgba(3,7,18,.5);
   border-bottom:1px solid var(--border);scrollbar-width:none}
 .platforms-bar::-webkit-scrollbar{display:none}
@@ -57,23 +59,28 @@ main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:2rem;display:grid;
 @media(max-width:640px){header{padding:.75rem 1rem;gap:.5rem}.platforms-bar{padding:.4rem 1rem}
   .logo{font-size:1.15rem}.search-container{flex-basis:100%;max-width:100%}
   .btn{padding:.7rem 1rem;font-size:.9rem}main{padding:.75rem}.icon-btn{width:34px;height:34px;font-size:14px}}
+
 .player-section{display:flex;flex-direction:column;gap:1rem;min-width:0}
 .video-wrapper{position:relative;width:100%;padding-top:56.25%;background:#000;border-radius:12px;overflow:hidden;
-  border:1px solid var(--border);box-shadow:0 10px 30px rgba(0,0,0,.8),0 0 20px rgba(6,182,212,.1)}
+  border:1px solid var(--border);box-shadow:0 10px 30px rgba(0,0,0,.8),0 0 20px rgba(6,182,212,.1);
+  touch-action: pan-y; /* Permite scroll vertical por defecto pero bloqueamos en swipe */
+  }
+.video-wrapper.swiping { touch-action: none; }
 #nativePlayer,#embedPlayer{position:absolute;top:0;left:0;width:100%;height:100%;border:none}
 #nativePlayer{object-fit:contain;background:#000;display:none;z-index:1;transition:filter 0.1s}
-#embedPlayer{display:none;z-index:2;background:#000}
-#embedPlayer iframe{width:100%;height:100%;border:0;display:block;position:absolute;top:0;left:0}
+#embedPlayer{display:none;z-index:2;background:#000;transition:filter 0.1s}
+#embedPlayer iframe, #embedPlayer > div{width:100%;height:100%;border:0;display:block;position:absolute;top:0;left:0}
 
-/* Overlay para Gestos */
-.gesture-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  background:rgba(0,0,0,.75);color:#fff;padding:1rem 2rem;border-radius:10px;
-  display:none;flex-direction:column;align-items:center;z-index:20;pointer-events:none;
-  border:1px solid rgba(255,255,255,.2);box-shadow:0 4px 20px rgba(0,0,0,.6)}
+/* Overlay para Gestos - MOVIDO A LA PARTE SUPERIOR */
+.gesture-overlay{position:absolute;top:15%;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.8);color:#fff;padding:.6rem 1.2rem;border-radius:10px;
+  display:none;flex-direction:column;align-items:center;z-index:30;pointer-events:none;
+  border:1px solid rgba(255,255,255,.2);box-shadow:0 4px 20px rgba(0,0,0,.6);min-width:130px}
 .gesture-overlay.show{display:flex;}
-.gesture-icon{font-size:2rem;margin-bottom:0.5rem;}
-.gesture-bar{width:150px;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden;margin-top:0.5rem;}
-.gesture-fill{height:100%;background:var(--accent);width:50%;}
+.gesture-icon{font-size:1.5rem;margin-bottom:0.3rem;}
+.gesture-text{font-size:0.9rem;font-weight:700;margin-bottom:0.3rem;}
+.gesture-bar{width:100px;height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden;}
+.gesture-fill{height:100%;background:var(--accent);width:50%;transition:width 0.1s;}
 
 .exit-fs-btn{position:fixed;top:16px;right:16px;z-index:2147483647;width:46px;height:46px;border-radius:50%;
   background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:22px;line-height:1;
@@ -220,12 +227,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 <main>
   <div class="player-section">
     <div class="video-wrapper" id="videoWrapper">
-      <video id="nativePlayer" playsinline controls crossorigin="anonymous"></video>
+      <video id="nativePlayer" playsinline controls crossorigin="anonymous" preload="auto"></video>
       <div id="embedPlayer"></div>
       
       <div class="gesture-overlay" id="gestureOverlay">
         <div class="gesture-icon" id="gestureIcon">🔊</div>
-        <div id="gestureText">50%</div>
+        <div class="gesture-text" id="gestureText">50%</div>
         <div class="gesture-bar"><div class="gesture-fill" id="gestureFill" style="width:50%"></div></div>
       </div>
     </div>
@@ -244,6 +251,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <button class="icon-btn" id="repeatBtn" title="Repetir">🔄</button>
         <button class="icon-btn" id="audioBtn" title="Idioma del audio">🎧</button>
         <button class="icon-btn" id="likeBtn" title="Favorito">🤍</button>
+        <button class="icon-btn" id="dlBtn" title="Descargar video">⬇️</button>
         <button class="icon-btn" id="subsBtn" title="Subtítulos">💬</button>
       </div>
     </div>
@@ -280,6 +288,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
   </div>
 </div>
 
+<!-- Video oculto para precargar siguiente -->
+<video id="preloadPlayer" style="display:none" muted crossorigin="anonymous"></video>
+
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script>
 /* ===== PWA ===== */
@@ -297,7 +308,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(
 caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{try{if(r.ok&&new URL(e.request.url).origin===location.origin){
-const cl=r.clone();caches.open('nx-v16').then(ca=>ca.put(e.request,cl));}}catch(_){}
+const cl=r.clone();caches.open('nx-v17').then(ca=>ca.put(e.request,cl));}}catch(_){}
 return r;}).catch(()=>caches.match('./'))));});`;
     try{const u=URL.createObjectURL(new Blob([sw],{type:'application/javascript'}));
       navigator.serviceWorker.register(u).catch(()=>{});}catch(_){}
@@ -374,16 +385,18 @@ async function invidiousFetch(path,timeout=4000){
 let playerMode='none',currentVideoId=null,currentPlatform='youtube',
     currentSource=null,currentVideoData=null,currentCategory='',
     currentVolume=100,currentBrightness=1,
+    currentStreamUrl=null, // URL para descarga
     loadToken=0,isAutoAdvancing=false,recentlyPlayed=new Set(),
     navHistory=[],navIdx=-1,audioCtx=null,gainNode=null,mediaSourceNode=null,
     connectedVideo=null,audioResumeListenerAttached=false,
-    preloadedNext=null; // ✅ NUEVO: Sugerencia de Kimi
+    preloadedNext=null,ytPlayer=null,ytApiReady=false,ytApiLoading=false;
 const relatedCache={};
 let hlsInstance=null,availableSubtitles=[],availableAudioTracks=[],
     currentAudioTrackId=null,currentSubtitle=null;
 let tvSeqList=[],tvSeqIdx=-1,tvGlobalCache=null;
 let skipCounter=0; 
 
+// Variables para gestos
 let touchStartY=0, touchStartX=0, touchStartVol=0, touchStartBright=1, isSwiping=false, swipeSide='';
 
 function attachAudioResumeListener(){
@@ -412,6 +425,8 @@ function applyVolume(v){
     const el=$('nativePlayer');if(el.muted&&currentVolume>0)el.muted=false;
     if(gainNode&&audioCtx&&audioCtx.state==='running'){gainNode.gain.value=currentVolume/100;el.volume=1}
     else el.volume=Math.min(1,currentVolume/100);
+  } else if(playerMode==='iframe' && ytPlayer && ytPlayer.setVolume){
+    try{ytPlayer.setVolume(Math.min(100,currentVolume));}catch(_){}
   }
   $('volumeRange').value = currentVolume;
 }
@@ -419,6 +434,7 @@ function applyVolume(v){
 function applyBrightness(b){
   currentBrightness = Math.max(0.1, Math.min(2, b));
   $('nativePlayer').style.filter = `brightness(${currentBrightness})`;
+  $('embedPlayer').style.filter = `brightness(${currentBrightness})`;
 }
 
 $('volumeRange').addEventListener('input',e=>applyVolume(parseInt(e.target.value,10)));
@@ -434,7 +450,82 @@ function setupBoost(videoEl){try{
   gainNode.gain.value=Math.min(currentVolume,500)/100;return true;
 }catch(e){gainNode=null;return false}}
 
-/* ===== Lógica de Gestos (UC Browser Style) ===== */
+/* ===== YouTube API Loader ===== */
+function loadYouTubeAPI(cb) {
+  if (ytApiReady) { cb(); return; }
+  if (ytApiLoading) {
+    // Esperar a que cargue
+    const check = setInterval(() => {
+      if (ytApiReady) { clearInterval(check); cb(); }
+    }, 100);
+    return;
+  }
+  ytApiLoading = true;
+  window.onYouTubeIframeAPIReady = () => {
+    ytApiReady = true;
+    ytApiLoading = false;
+    cb();
+  };
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+}
+
+function loadYTPlayer(videoId, startTime=0) {
+  // Destruir reproductor anterior
+  if (ytPlayer) {
+    try {
+      if (typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
+      if (typeof ytPlayer.destroy === 'function') ytPlayer.destroy();
+    } catch(e) {}
+    ytPlayer = null;
+  }
+  
+  const embed = $('embedPlayer');
+  embed.innerHTML = '<div id="yt-player-container" style="width:100%;height:100%"></div>';
+  embed.style.display = 'block';
+  embed.style.filter = `brightness(${currentBrightness})`;
+  $('nativePlayer').style.display = 'none';
+  playerMode = 'iframe';
+  
+  loadYouTubeAPI(() => {
+    ytPlayer = new YT.Player('yt-player-container', {
+      videoId: videoId,
+      playerVars: {
+        autoplay: 1,
+        controls: 1,
+        modestbranding: 1,
+        rel: 0,
+        playsinline: 1
+      },
+      events: {
+        onReady: (e) => {
+          if (startTime > 0) e.target.seekTo(startTime, true);
+          e.target.setVolume(Math.min(100, currentVolume));
+          try { e.target.playVideo(); } catch(_){}
+          updateVolumeMax();
+          updatePauseBtn();
+        },
+        onStateChange: (e) => {
+          if (e.data === 0) {
+            // Video terminado
+            handleEnded();
+          }
+          updatePauseBtn();
+        },
+        onError: (e) => {
+          console.warn('[YT] Error', e.data);
+          toast('⚠️ Error de reproducción en YouTube');
+        }
+      }
+    });
+  });
+  
+  // Ocultar botón de descarga (en iframe no podemos descargar)
+  updateDownloadBtn(false);
+}
+
+/* ===== Gestos tipo UC Browser ===== */
 const vw = $('videoWrapper');
 vw.addEventListener('touchstart', (e) => {
   if(e.touches.length !== 1) return;
@@ -453,34 +544,38 @@ vw.addEventListener('touchmove', (e) => {
 
   if(!isSwiping && (Math.abs(deltaY) > 15 || Math.abs(deltaX) > 15)) {
     isSwiping = true;
+    vw.classList.add('swiping'); // Bloquea el scroll
     $('gestureOverlay').classList.add('show');
   }
 
   if(isSwiping) {
-    e.preventDefault();
+    e.preventDefault(); // Evita scroll de la página
     if(Math.abs(deltaY) > Math.abs(deltaX)) {
       if(swipeSide === 'right') {
-        let newVol = Math.max(0, Math.min(500, touchStartVol + (deltaY * 1.5)));
+        let newVol = Math.max(0, Math.min(playerMode==='native'?500:100, touchStartVol + (deltaY * 1.5)));
         applyVolume(newVol);
-        $('gestureIcon').textContent = '🔊';
+        $('gestureIcon').textContent = newVol > 100 ? '🔊' : (newVol > 0 ? '🔉' : '🔇');
         $('gestureText').textContent = Math.round(newVol) + '%';
-        $('gestureFill').style.width = (newVol/500*100) + '%';
+        $('gestureFill').style.width = (newVol/(playerMode==='native'?500:100)*100) + '%';
       } else {
-        let newBright = Math.max(0.1, Math.min(2, touchStartBright + (deltaY * 0.005)));
+        let newBright = Math.max(0.1, Math.min(2, touchStartBright - (deltaY * 0.005)));
         applyBrightness(newBright);
-        $('gestureIcon').textContent = '☀️';
+        $('gestureIcon').textContent = newBright > 1 ? '☀️' : '🌤️';
         $('gestureText').textContent = Math.round(newBright * 100) + '%';
         $('gestureFill').style.width = (newBright/2*100) + '%';
       }
     } else {
-      const el = $('nativePlayer');
-      if(playerMode === 'native' && el.duration) {
-        let newTime = Math.max(0, Math.min(el.duration, el.currentTime + (deltaX * 0.5)));
-        el.currentTime = newTime;
-        const timeStr = Math.floor(newTime/60)+':'+String(Math.floor(newTime%60)).padStart(2,'0');
-        $('gestureIcon').textContent = deltaX > 0 ? '⏩' : '⏪';
-        $('gestureText').textContent = timeStr;
-        $('gestureFill').style.width = (newTime/el.duration*100) + '%';
+      // Horizontal: adelantar/retroceder (solo en nativo)
+      if(playerMode === 'native') {
+        const el = $('nativePlayer');
+        if(el.duration) {
+          let newTime = Math.max(0, Math.min(el.duration, el.currentTime + (deltaX * 0.5)));
+          el.currentTime = newTime;
+          const timeStr = Math.floor(newTime/60)+':'+String(Math.floor(newTime%60)).padStart(2,'0');
+          $('gestureIcon').textContent = deltaX > 0 ? '⏩' : '⏪';
+          $('gestureText').textContent = timeStr;
+          $('gestureFill').style.width = (newTime/el.duration*100) + '%';
+        }
       }
     }
   }
@@ -488,21 +583,32 @@ vw.addEventListener('touchmove', (e) => {
 
 vw.addEventListener('touchend', () => {
   if(isSwiping) {
-    setTimeout(() => { $('gestureOverlay').classList.remove('show'); }, 500);
+    setTimeout(() => { $('gestureOverlay').classList.remove('show'); }, 600);
   }
   isSwiping = false;
+  vw.classList.remove('swiping');
 });
 
 /* ===== Player Core ===== */
 function destroyPlayer(){
+  // Detener y destruir reproductor de YouTube primero
+  if(ytPlayer) {
+    try {
+      if (typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
+      if (typeof ytPlayer.destroy === 'function') ytPlayer.destroy();
+    } catch(e) {}
+    ytPlayer = null;
+  }
   if(hlsInstance){try{hlsInstance.destroy()}catch(_){}hlsInstance=null}
   const el=$('nativePlayer');el.style.display='none';
   try{el.pause();el.removeAttribute('src');el.load()}catch(_){}
   el.muted=false;el.volume=1; el.style.filter='none';
-  const embed=$('embedPlayer');embed.style.display='none';embed.innerHTML='';
+  const embed=$('embedPlayer');embed.style.display='none';embed.innerHTML='';embed.style.filter='none';
   playerMode='none';
   availableAudioTracks=[];currentAudioTrackId=null;availableSubtitles=[];currentSubtitle=null;
-  preloadedNext=null; // Limpiar precarga al cambiar
+  preloadedNext=null;
+  currentStreamUrl = null;
+  updateDownloadBtn(false);
   if('mediaSession' in navigator) navigator.mediaSession.playbackState='none';
 }
 
@@ -518,6 +624,7 @@ function loadEmbedUrl(url,fallbackInfo){
   iframe.style.cssText='width:100%;height:100%;border:0;display:block;position:absolute;top:0;left:0';
   embed.appendChild(iframe);
   embed.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;display:block;background:#000';
+  embed.style.filter=`brightness(${currentBrightness})`;
   playerMode='iframe';updateVolumeMax();updatePauseBtn();
 }
 
@@ -536,7 +643,7 @@ async function playVideo(src,opts={}){
   $('videoMeta').textContent='';
   $('videoDesc').textContent='';
   skipCounter = 0; 
-  preloadedNext = null; // Resetear precarga al iniciar nuevo video
+  preloadedNext = null;
 
   const token=++loadToken;
   currentVideoId=null;currentSource=src;
@@ -559,7 +666,7 @@ async function playVideo(src,opts={}){
   if(currentVideoId)setTimeout(()=>pushHistory({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader()}),800);
 }
 
-/* ===== YOUTUBE REPRODUCTOR ===== */
+/* ===== YOUTUBE ===== */
 async function loadYouTube(id,startTime,token){
   fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`)
     .then(r => r.json()).then(data => {
@@ -603,15 +710,8 @@ async function loadYouTube(id,startTime,token){
     }
   } catch(e) { console.warn('Invidious también falló'); }
   
-  console.warn('Video bloqueado en APIs. Usando Iframe de respaldo.');
-  const embed=$('embedPlayer');
-  embed.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1&origin=${encodeURIComponent(window.location.origin)}" 
-    allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:10;"></iframe>`;
-  embed.style.display='block';
-  $('nativePlayer').style.display='none';
-  playerMode='iframe';
-  updateVolumeMax();
-  updatePauseBtn();
+  console.warn('Video bloqueado en APIs. Usando YT.Player de respaldo.');
+  loadYTPlayer(id, startTime);
 }
 
 async function tryNativeFromData(videoId,startTime,data){
@@ -622,20 +722,21 @@ async function tryNativeFromData(videoId,startTime,data){
     streams.sort((a,b)=>{const a720=Math.abs((a.height||0)-720),b720=Math.abs((b.height||0)-720);
       if(a720!==b720)return a720-b720;return (b.height||0)-(a.height||0)});
     const chosen=streams[0];
-    return await tryLoadVideoElement(chosen.url, startTime);
+    return await tryLoadVideoElement(chosen.url, startTime, chosen.url);
   }catch(_){return false}
 }
 
-async function tryLoadVideoElement(url, startTime) {
+async function tryLoadVideoElement(url, startTime, downloadUrl) {
   const el=$('nativePlayer');
   el.crossOrigin='anonymous';
   el.src=url;
+  el.load(); // Forzar carga
   const ok=await new Promise(resolve=>{
     let done=false;
     const fin=v=>{if(!done){done=true;resolve(v)}};
     el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
     el.addEventListener('error',()=>fin(false),{once:true});
-    setTimeout(()=>fin(false),3000);
+    setTimeout(()=>fin(false),4000);
   });
   if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
   if(startTime>0)el.currentTime=startTime;
@@ -652,17 +753,73 @@ async function tryLoadVideoElement(url, startTime) {
   applyVolume(currentVolume);
   applyBrightness(currentBrightness);
   updatePauseBtn();
+  
+  // Guardar URL para descarga
+  currentStreamUrl = downloadUrl || url;
+  updateDownloadBtn(true);
   return true;
 }
 
 async function loadDirect(url,startTime){
   destroyPlayer();const el=$('nativePlayer');
-  el.crossOrigin='anonymous';el.src=url;el.style.display='block';
+  el.crossOrigin='anonymous';el.src=url;el.style.display='block';el.load();
   if(startTime>0){await new Promise(r=>{el.addEventListener('loadedmetadata',r,{once:true});setTimeout(r,2000)});el.currentTime=startTime}
   setupBoost(el);playerMode='native';updateVolumeMax();detectNativeAudioTracks(el);
   try{await el.play()}catch(e){try{el.muted=true;await el.play()}catch(_){}}
   applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
+  currentStreamUrl = url;
+  updateDownloadBtn(true);
 }
+
+/* ===== Botón de Descarga ===== */
+function updateDownloadBtn(show) {
+  const btn = $('dlBtn');
+  if(show && currentStreamUrl) {
+    btn.classList.add('visible');
+  } else {
+    btn.classList.remove('visible');
+  }
+}
+
+$('dlBtn').addEventListener('click', async () => {
+  if(!currentStreamUrl) {
+    toast('⚠️ Este video no se puede descargar');
+    return;
+  }
+  const title = getCurrentTitle() || 'video';
+  const safeName = title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 80) + '.mp4';
+  
+  try {
+    toast('⏳ Iniciando descarga...');
+    // Intentar descargar con fetch + blob
+    const res = await fetch(currentStreamUrl);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = safeName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+    toast('✅ Descarga completada');
+  } catch(e) {
+    // Fallback: abrir en nueva pestaña
+    try {
+      const a = document.createElement('a');
+      a.href = currentStreamUrl;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast('↗️ Abriendo en nueva pestaña');
+    } catch(_) {
+      toast('❌ No se pudo descargar');
+    }
+  }
+});
 
 /* ===== TV ===== */
 async function loadTV(ch,idx){
@@ -693,6 +850,8 @@ async function loadTV(ch,idx){
     }catch(_){}
   }
   applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
+  currentStreamUrl = ch.url;
+  updateDownloadBtn(true);
 }
 function playTVByIndex(idx){
   if(idx<0||idx>=tvSeqList.length){toast('No hay más canales');return}
@@ -798,7 +957,7 @@ $('subsBtn').addEventListener('click',(e)=>{e.stopPropagation();
   const rect=e.currentTarget.getBoundingClientRect();
   menu.style.top=Math.min(rect.bottom+4,window.innerHeight-320)+'px';
   menu.style.left=Math.min(rect.left-150,window.innerWidth-220)+'px';
-  let html='<div class="dl-list"><div class="dl-item" data-lang="off"><span class="q">Desactivados</span></div>';
+  let html='<div class="dl-list"><div class="dl-item" data-lang="off"><span class="q">❌ Desactivados</span></div>';
   if(availableSubtitles.length===0)html+='<div class="dl-empty">Sin subtítulos disponibles</div>';
   else availableSubtitles.forEach(s=>{const a=currentSubtitle===s.code?'✓ ':'';
     html+=`<div class="dl-item" data-lang="${esc(s.code)}" data-src="${s.source||'yt'}"><span class="q">${a}${esc(s.name)}</span><span class="s">${s.auto?'auto':(s.source||'')}</span></div>`});
@@ -814,12 +973,31 @@ $('subsBtn').addEventListener('click',(e)=>{e.stopPropagation();
 
 async function applySubtitle(code,src){
   currentSubtitle=code;
+  
+  // Si estamos en iframe (YouTube), usar API de captions
+  if(playerMode === 'iframe' && ytPlayer) {
+    try {
+      if(!code) {
+        ytPlayer.unloadModule('captions');
+        toast('Subtítulos desactivados');
+      } else {
+        ytPlayer.loadModule('captions');
+        ytPlayer.setOption('captions', 'track', {languageCode: code});
+        ytPlayer.setOption('captions', 'reload', true);
+        toast('💬 Subtítulos: ' + code);
+      }
+      return;
+    } catch(e) { console.warn('Error subtítulos YT:', e); }
+  }
+  
+  // HLS subtitles
   if(hlsInstance&&hlsInstance.subtitleTracks&&hlsInstance.subtitleTracks.length){
     if(!code){try{hlsInstance.subtitleTrack=-1;hlsInstance.subtitleDisplay=false}catch(_){}}
     else{const sub=availableSubtitles.find(s=>s.code===code&&s.source==='hls');
       if(sub){try{hlsInstance.subtitleTrack=sub.idx;hlsInstance.subtitleDisplay=true;toast('💬 '+sub.name);return}catch(_){}}}
   }
   
+  // Native subtitles con Blob
   const el=$('nativePlayer');
   el.querySelectorAll('track').forEach(t=>t.remove());
   if(!code){toast('Subtítulos desactivados');return}
@@ -829,7 +1007,15 @@ async function applySubtitle(code,src){
   
   try {
     const response = await fetch(sub.url);
-    const text = await response.text();
+    let text = await response.text();
+    
+    // Si es SRT, convertir a VTT
+    if(!text.trim().startsWith('WEBVTT')) {
+      text = 'WEBVTT\n\n' + text
+        .replace(/\r\n/g, '\n')
+        .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+    }
+    
     const blob = new Blob([text], {type: 'text/vtt'});
     const blobUrl = URL.createObjectURL(blob);
 
@@ -841,9 +1027,14 @@ async function applySubtitle(code,src){
     track.default=true;
     el.appendChild(track);
     
+    // Esperar a que se cargue y activarlo
     setTimeout(()=>{
-        try { el.textTracks[0].mode='showing'; } catch(_){}
-    },200);
+      try { 
+        if(el.textTracks.length > 0) {
+          el.textTracks[0].mode='showing'; 
+        }
+      } catch(_){}
+    }, 300);
     toast('💬 Subtítulos: '+sub.name);
   } catch(e) {
     console.error("Error cargando subtítulos:", e);
@@ -852,16 +1043,43 @@ async function applySubtitle(code,src){
 }
 
 /* ===== Pause/Repeat ===== */
-function updatePauseBtn(){const btn=$('pauseBtn');if(!btn)return;let playing=false;
-  if(playerMode==='native')playing=!$('nativePlayer').paused;
-  btn.textContent=playing?'⏸':'▶'}
+function updatePauseBtn(){
+  const btn=$('pauseBtn');
+  if(!btn) return;
+  let playing=false;
+  if(playerMode==='native') playing=!$('nativePlayer').paused;
+  else if(playerMode==='iframe' && ytPlayer && ytPlayer.getPlayerState) {
+    try { playing = ytPlayer.getPlayerState() === 1; } catch(_){}
+  }
+  btn.textContent=playing?'⏸':'▶';
+}
+
 $('pauseBtn').addEventListener('click',()=>{
-  if(playerMode==='native'){const el=$('nativePlayer');
-    if(el.paused)el.play().catch(()=>{});else el.pause();updatePauseBtn()}
-  else if(currentSource)playVideo(currentSource,{noNav:true})});
+  if(playerMode==='native'){
+    const el=$('nativePlayer');
+    if(el.paused)el.play().catch(()=>{});
+    else el.pause();
+    updatePauseBtn();
+  } else if(playerMode==='iframe' && ytPlayer) {
+    try {
+      const s = ytPlayer.getPlayerState();
+      if(s===1) ytPlayer.pauseVideo();
+      else ytPlayer.playVideo();
+    } catch(_){}
+    setTimeout(updatePauseBtn,200);
+  } else if(currentSource) {
+    playVideo(currentSource,{noNav:true});
+  }
+});
+
 $('repeatBtn').addEventListener('click',()=>{
-  if(playerMode==='native'){const el=$('nativePlayer');el.currentTime=0;el.play().catch(()=>{});toast('🔄 Reiniciado')}
-  else if(currentSource)playVideo(currentSource,{noNav:true})});
+  if(playerMode==='native'){
+    const el=$('nativePlayer');el.currentTime=0;el.play().catch(()=>{});toast('🔄 Reiniciado');
+  } else if(playerMode==='iframe' && ytPlayer && ytPlayer.seekTo) {
+    try { ytPlayer.seekTo(0,true); ytPlayer.playVideo(); toast('🔄 Reiniciado'); } catch(_){}
+  } else if(currentSource) playVideo(currentSource,{noNav:true});
+});
+
 $('nativePlayer').addEventListener('play',updatePauseBtn);
 $('nativePlayer').addEventListener('pause',updatePauseBtn);
 
@@ -888,7 +1106,7 @@ $('likeBtn').addEventListener('click',()=>{
   else{favs.push({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader(),ts:Date.now()});
     setFavs(favs);$('likeBtn').textContent='❤️';toast('❤️ Añadido')}});
 
-/* ===== Auto-next Inteligente + Precarga (Kimi) ===== */
+/* ===== Auto-next + Precarga ===== */
 async function pickRelated(id){
   if(!relatedCache[id]){try{const data=await pipedFetch('/streams/'+id,4000);
     relatedCache[id]=(data.relatedStreams||[]).filter(r=>r.type==='stream'&&r.url)
@@ -906,29 +1124,27 @@ async function pickRelated(id){
   return finalPool[Math.floor(Math.random()*finalPool.length)];
 }
 
-// ✅ NUEVO (Kimi): Precargar siguiente video mientras se reproduce el actual
 async function preloadNext(currentId){
   if(!currentId || isAutoAdvancing) return;
   try {
     const next = await pickRelated(currentId);
     if(next){
-      // Precargar thumbnail en caché del navegador
+      // Precargar thumbnail
       const img = new Image();
       img.src = `https://i.ytimg.com/vi/${next.id}/mqdefault.jpg`;
-      // Precargar metadata (título) para tenerlo listo
+      // Precargar metadata
       fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${next.id}`)
         .then(r => r.json()).catch(()=>{});
       preloadedNext = next;
-      console.log('✅ Siguiente video precargado:', next.title);
     }
   } catch(e) {}
 }
 
 async function handleEnded(){
-  if(isAutoAdvancing)return;isAutoAdvancing=true;
+  if(isAutoAdvancing)return;
+  isAutoAdvancing=true;
   try{
-    if(!currentVideoId)return;
-    // ✅ NUEVO (Kimi): Usar precarga si existe (transición instantánea)
+    if(!currentVideoId) return;
     let next = preloadedNext;
     preloadedNext = null;
     if(!next) {
@@ -938,13 +1154,16 @@ async function handleEnded(){
       toast(`▶️ ${next.title.slice(0,50)}`,2500);
       const keepCat = next.uploader === currentCategory ? currentCategory : next.uploader;
       await playVideo({type:'youtube',id:next.id},{title:next.title, category:keepCat});
+    } else {
+      toast('No hay más videos relacionados');
     }
-  }catch(e){console.warn(e)}finally{isAutoAdvancing=false}
+  }catch(e){console.warn(e)}
+  finally{isAutoAdvancing=false}
 }
+
 function markPlayed(id){if(!id)return;recentlyPlayed.add(id);
   if(recentlyPlayed.size>60){const f=recentlyPlayed.values().next().value;recentlyPlayed.delete(f)}}
 
-// ✅ NUEVO (Kimi): Precargar el siguiente cuando empieza a reproducirse el actual
 $('nativePlayer').addEventListener('playing', ()=>{
   if(currentVideoId && playerMode==='native') preloadNext(currentVideoId);
 });
@@ -988,14 +1207,13 @@ function switchPlatform(plat){
   }
 }
 
-/* ===== Trending con Multi-Fuente (Kimi) ===== */
+/* ===== Trending ===== */
 const FALLBACK_YT=[
   {id:'dQw4w9WgXcQ',title:'Rick Astley - Never Gonna Give You Up',uploader:'Rick Astley'},
   {id:'kJQP7kiw5Fk',title:'Luis Fonsi - Despacito',uploader:'Luis Fonsi'},
   {id:'9bZkp7q19f0',title:'PSY - GANGNAM STYLE',uploader:'officialpsy'}
 ];
 
-// ✅ NUEVO (Kimi): Fuentes de trending diversificadas
 const TRENDING_SOURCES=[
   () => pipedFetch('/trending?region=US', 5000),
   () => pipedFetch('/trending?region=MX', 5000),
@@ -1009,8 +1227,6 @@ async function loadTrending(){
   
   const topics = ['estrenos de peliculas 2025', 'nuevos animes 2025', 'trailers de series 2025', 'nuevos videojuegos 2025', 'estrenos musicales 2025'];
   const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-  
-  // 50% de las veces usamos búsqueda de estrenos (variedad), 50% usamos trending aleatorio
   const useSearch = Math.random() > 0.5;
   
   if(useSearch){
@@ -1027,7 +1243,6 @@ async function loadTrending(){
     }catch(_){}
   }
   
-  // Diversificar fuentes de trending (Kimi)
   const shuffled = TRENDING_SOURCES.slice().sort(() => 0.5 - Math.random());
   for(const source of shuffled){
     try{
@@ -1043,7 +1258,6 @@ async function loadTrending(){
     }catch(_){}
   }
   
-  // Fallback final
   renderResults(FALLBACK_YT.map(v=>({id:v.id,title:v.title,uploader:v.uploader,
     thumbnail:`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`,platform:'youtube'})),'youtube');
 }
