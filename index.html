@@ -246,7 +246,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 <button class="exit-fs-btn" id="exitFsBtn" aria-label="Salir de pantalla completa">✕</button>
 <div class="toast" id="toast"></div>
 
-<!-- YA NO CARGAMOS LA API DE YOUTUBE, SOLO HLS PARA TV -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script>
 /* ===== PWA ===== */
@@ -264,7 +263,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(
 caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{try{if(r.ok&&new URL(e.request.url).origin===location.origin){
-const cl=r.clone();caches.open('nx-v9').then(ca=>ca.put(e.request,cl));}}catch(_){}
+const cl=r.clone();caches.open('nx-v10').then(ca=>ca.put(e.request,cl));}}catch(_){}
 return r;}).catch(()=>caches.match('./'))));});`;
     try{const u=URL.createObjectURL(new Blob([sw],{type:'application/javascript'}));
       navigator.serviceWorker.register(u).catch(()=>{});}catch(_){}
@@ -305,12 +304,12 @@ function detectSource(input){if(!input)return null;const s=input.trim();
   if(/^[a-zA-Z0-9_-]{11}$/.test(s))return{type:'youtube',id:s};
   return null}
 
-/* ===== APIs ===== */
+/* ===== APIs (VLC-Style Fallbacks) ===== */
 const PIPED=['https://pipedapi.kavin.rocks','https://pipedapi.adminforge.de','https://api.piped.private.coffee',
-  'https://pipedapi.drgns.space','https://pipedapi.reallyaweso.me','https://piped-api.lunar.icu',
-  'https://pipedapi.ducks.party','https://pipedapi.r4fo.com'];
+  'https://pipedapi.drgns.space','https://pipedapi.reallyaweso.me','https://piped-api.lunar.icu'];
 const INVIDIOUS=['https://inv.nadeko.net','https://invidious.f5.si','https://invidious.privacyredirect.com',
   'https://invidious.jing.rocks','https://invidious.reallyaweso.me','https://yewtu.be'];
+const COBALT=['https://api.cobalt.tools/','https://cobalt-api.kwiatekmiki.com/','https://co.wuk.sh/api/json'];
 
 async function pipedFetch(path,timeout=4000){
   const ps=PIPED.map(async base=>{
@@ -328,6 +327,34 @@ async function invidiousFetch(path,timeout=4000){
       if(!res.ok)throw 0;return {data:await res.json(),base}}catch(_){clearTimeout(t);throw 0}
   });
   return await Promise.any(ps);
+}
+
+async function cobaltFetch(videoId) {
+    const payload = {
+        url: "https://www.youtube.com/watch?v=" + videoId,
+        videoQuality: "720",
+        youtubeVideoCodec: "h264",
+        downloadMode: "auto"
+    };
+    for (const ep of COBALT) {
+        try {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 5000);
+            const res = await fetch(ep, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: ctrl.signal
+            });
+            clearTimeout(t);
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (data.status === 'tunnel' || data.status === 'redirect' || data.url) {
+                return data.url;
+            }
+        } catch (e) {}
+    }
+    return null;
 }
 
 /* ===== State ===== */
@@ -382,7 +409,7 @@ function setupBoost(videoEl){try{
   gainNode.gain.value=Math.min(currentVolume,500)/100;return true;
 }catch(e){gainNode=null;return false}}
 
-/* ===== Player core ===== */
+/* ===== Player Core ===== */
 function destroyPlayer(){
   if(hlsInstance){try{hlsInstance.destroy()}catch(_){}hlsInstance=null}
   const el=$('nativePlayer');el.style.display='none';
@@ -391,40 +418,23 @@ function destroyPlayer(){
   const embed=$('embedPlayer');embed.style.display='none';embed.innerHTML='';
   playerMode='none';
   availableAudioTracks=[];currentAudioTrackId=null;availableSubtitles=[];currentSubtitle=null;
-  clearExternalFallback();
+  if('mediaSession' in navigator) navigator.mediaSession.playbackState='none';
 }
 
 function loadEmbedUrl(url,fallbackInfo){
   destroyPlayer();
   const embed=$('embedPlayer');
   void embed.offsetHeight;
-  let loaded=false;
   const iframe=document.createElement('iframe');
   iframe.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture');
   iframe.setAttribute('allowfullscreen','true');
   iframe.setAttribute('frameborder','0');
   iframe.src=url;
-  iframe.addEventListener('load',()=>{loaded=true});
   iframe.style.cssText='width:100%;height:100%;border:0;display:block;position:absolute;top:0;left:0';
   embed.appendChild(iframe);
   embed.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;display:block;background:#000';
   playerMode='iframe';updateVolumeMax();updatePauseBtn();
-
-  if(fallbackInfo&&fallbackInfo.url)showExternalFallback(fallbackInfo.url,fallbackInfo.name);
-  else clearExternalFallback();
 }
-
-function showExternalFallback(url,name){
-  clearExternalFallback();
-  const info=$('videoInfo');
-  if(!info)return;
-  const link=document.createElement('div');
-  link.id='externalFallback';
-  link.innerHTML=`<span>¿No se reproduce? Está disponible en su sitio original</span>
-    <a href="${url}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Abrir en ${name} ↗</a>`;
-  info.appendChild(link);
-}
-function clearExternalFallback(){const el=$('externalFallback');if(el)el.remove()}
 
 async function playDailymotion(id,title){
   loadEmbedUrl(`https://www.dailymotion.com/embed/video/${id}?autoplay=1&queue-enable=false`,
@@ -467,10 +477,6 @@ async function playVideo(src,opts={}){
     else if(src.type==='direct'){await loadDirect(src.url,opts.startTime||0);showBasicInfo('Video','','')}
     else if(src.type==='vimeo'){await playVimeo(src.id,opts.title)}
     else if(src.type==='dailymotion'){await playDailymotion(src.id,opts.title)}
-    else if(src.type==='archive'){
-      loadEmbedUrl(`https://archive.org/embed/${src.id}`,{url:`https://archive.org/details/${src.id}`,name:'Archive.org'});
-      showBasicInfo('Internet Archive',`archive.org/details/${src.id}`,'');
-    }
     else if(src.type==='iframe'){
       loadEmbedUrl(src.url,{url:src.url,name:'sitio original'});
       showBasicInfo('Video externo',src.url,'');
@@ -482,9 +488,9 @@ async function playVideo(src,opts={}){
   if(currentVideoId)setTimeout(()=>pushHistory({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader()}),800);
 }
 
-/* ===== YOUTUBE REPRODUCTOR (100% NATIVO, SIN IFRAME) ===== */
+/* ===== YOUTUBE REPRODUCTOR VLC-ROBUSTO (Nativo) ===== */
 async function loadYouTube(id,startTime,token){
-  // 1. Obtener título por noembed (Rápido, siempre funciona)
+  // 1. Obtener título por noembed (Rápido, siempre funciona para actualizar los textos)
   fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`)
     .then(r => r.json())
     .then(data => {
@@ -522,26 +528,33 @@ async function loadYouTube(id,startTime,token){
     setVideoInfoFromInvidious(data);
     if(data.author) currentCategory = data.author;
     
-    // local=true hace que Invidious actúe como proxy de video
     const streams = data.formatStreams || [];
     if(streams.length > 0) {
-      // Priorizar el stream 720p (itag 22 o similar)
       let best = streams.find(s => s.itag === '22' || s.qualityLabel === '720p') || streams[0];
       const proxyUrl = `${invRes.base}/latest_version?id=${id}&itag=${best.itag}&local=true`;
-      
       const ok = await tryLoadVideoElement(proxyUrl, startTime);
       if(ok) return;
     }
-  }catch(e){ console.warn('Invidious también falló.'); }
+  }catch(e){ console.warn('Invidious también falló. Probando Cobalt API...'); }
 
-  // 4. Fallback final: Mostrar mensaje de error limpio
+  // 4. Intentar Cobalt API (Motor robusto anti-bloqueos)
+  try {
+    const cobaltUrl = await cobaltFetch(id);
+    if(token!==loadToken)return;
+    if(cobaltUrl) {
+      const ok = await tryLoadVideoElement(cobaltUrl, startTime);
+      if(ok) return;
+    }
+  } catch(e) { console.warn('Cobalt falló.'); }
+
+  // 5. Fallback final: YouTube Iframe (Solo si los demás fallaron)
+  // Usamos un iframe "limpio" pero no podemos saltarnos la publicidad ni el bloqueo del autor.
   if(token!==loadToken)return;
-  $('embedPlayer').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:1rem;background:#000;">
-    <h3 style="margin-bottom:.5rem;">Video restringido</h3>
-    <p style="color:#94a3b8;font-size:.9rem;max-width:80%;">Este video no se puede reproducir por restricciones del autor.</p>
-    <a href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener" class="btn" style="margin-top:1rem;">Abrir en YouTube ↗</a>
-  </div>`;
+  destroyPlayer();
+  $('embedPlayer').innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1&origin=${encodeURIComponent(window.location.origin)}" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
   $('embedPlayer').style.display='block';
+  playerMode='iframe';
+  toast('⚠️ Reproduciendo en modo compatible (puede tener anuncios)');
 }
 
 async function tryNativeFromData(videoId,startTime,data){
