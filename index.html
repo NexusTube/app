@@ -53,10 +53,6 @@ header{display:flex;align-items:center;gap:1rem;padding:1rem 2rem;border-bottom:
   white-space:nowrap;transition:all .2s;flex-shrink:0}
 .plat-btn:hover{background:rgba(6,182,212,.1);color:var(--text)}
 .plat-btn.active{background:rgba(6,182,212,.2);color:var(--accent);border-color:var(--accent)}
-#reverseSearchBar{display:none;gap:.4rem;padding:.4rem 2rem;background:rgba(251,191,36,.08);
-  border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
-#reverseSearchBar.visible{display:flex}
-#reverseSearchBar span{font-size:.75rem;color:var(--muted)}
 main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:2rem;display:grid;grid-template-columns:1fr 360px;gap:2rem}
 @media(max-width:1024px){main{grid-template-columns:1fr;padding:1rem}}
 @media(max-width:640px){header{padding:.75rem 1rem;gap:.5rem}.platforms-bar{padding:.4rem 1rem}
@@ -95,10 +91,6 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-ra
 .video-info .desc.expanded{max-height:500px;overflow-y:auto}
 .video-info .toggle-desc{background:none;border:none;color:var(--accent);cursor:pointer;
   font-size:.8rem;margin-top:.4rem;padding:0;font-weight:600;display:none}
-#externalFallback{margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);
-  display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
-#externalFallback span{font-size:.8rem;color:var(--muted)}
-#externalFallback a{padding:.4rem .9rem;font-size:.8rem}
 .playlist-sidebar{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--border);
   border-radius:12px;padding:0;max-height:750px;display:flex;flex-direction:column;overflow:hidden}
 .sidebar-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -199,14 +191,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
   </div>
   <button class="btn btn-secondary" id="installBtn">📲</button>
 </header>
-
-<div id="reverseSearchBar">
-  <span>🔍 Búsqueda inversa:</span>
-  <button class="plat-btn" data-reverse="google">Google Lens</button>
-  <button class="plat-btn" data-reverse="yandex">Yandex</button>
-  <button class="plat-btn" data-reverse="tineye">TinEye</button>
-  <button class="plat-btn" data-reverse="bing">Bing Visual</button>
-</div>
 
 <div class="platforms-bar">
   <button class="plat-btn active" data-plat="youtube">▶️ YouTube</button>
@@ -312,13 +296,11 @@ function fmtDur(sec){if(sec===undefined||sec===null||sec<0||isNaN(sec))return ''
   sec=Math.floor(sec);const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
   if(h>0)return h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
   return m+':'+String(s).padStart(2,'0')}
-function isImageUrl(s){return /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|bmp)(\?|#|$)/i.test((s||'').trim())}
 function detectSource(input){if(!input)return null;const s=input.trim();
   if(/\.(mp4|webm|ogg|ogv|mov|m4v|m3u8)(\?|#|$)/i.test(s))return{type:'direct',url:s};
   const yt=parseVideoId(s);if(yt)return{type:'youtube',id:yt};
   const vm=s.match(/vimeo\.com\/(?:video\/)?(\d+)/);if(vm)return{type:'vimeo',id:vm[1]};
   const dm=s.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/);if(dm)return{type:'dailymotion',id:dm[1]};
-  const ia=s.match(/archive\.org\/(?:details|embed)\/([^\/\?]+)/);if(ia)return{type:'archive',id:ia[1]};
   if(/^https?:\/\//.test(s))return{type:'iframe',url:s};
   if(/^[a-zA-Z0-9_-]{11}$/.test(s))return{type:'youtube',id:s};
   return null}
@@ -330,11 +312,20 @@ const PIPED=['https://pipedapi.kavin.rocks','https://pipedapi.adminforge.de','ht
 const INVIDIOUS=['https://inv.nadeko.net','https://invidious.f5.si','https://invidious.privacyredirect.com',
   'https://invidious.jing.rocks','https://invidious.reallyaweso.me','https://yewtu.be'];
 
-async function pipedFetch(path,timeout=5000){
+async function pipedFetch(path,timeout=4000){
   const ps=PIPED.map(async base=>{
     const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),timeout);
     try{const res=await fetch(base+path,{signal:ctrl.signal});clearTimeout(t);
       if(!res.ok)throw 0;return await res.json()}catch(_){clearTimeout(t);throw 0}
+  });
+  return await Promise.any(ps);
+}
+
+async function invidiousFetch(path,timeout=4000){
+  const ps=INVIDIOUS.map(async base=>{
+    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),timeout);
+    try{const res=await fetch(base+path,{signal:ctrl.signal});clearTimeout(t);
+      if(!res.ok)throw 0;return {data:await res.json(),base}}catch(_){clearTimeout(t);throw 0}
   });
   return await Promise.any(ps);
 }
@@ -362,8 +353,6 @@ function attachAudioResumeListener(){
       const boosted=setupBoost($('nativePlayer'));if(boosted){updateVolumeMax();applyVolume(currentVolume)}}
   }catch(_){}};
   document.addEventListener('click',bootstrap,{passive:true});
-  document.addEventListener('touchstart',bootstrap,{passive:true});
-  document.addEventListener('keydown',bootstrap,{passive:true});
 }
 
 /* ===== Volume ===== */
@@ -386,7 +375,6 @@ function applyVolume(v){
   }
 }
 $('volumeRange').addEventListener('input',e=>applyVolume(parseInt(e.target.value,10)));
-
 function setupBoost(videoEl){try{
   if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return false}}
   if(audioCtx.state!=='running'){gainNode=null;return false}
@@ -422,14 +410,19 @@ function createYTPlayer(id,startTime=0){
   try{
     player=new YT.Player('ytSlot',{
       videoId:id,width:'100%',height:'100%',
-      // Cambiado a youtube-nocookie para mayor privacidad y menos anuncios
-      playerVars:{autoplay:1,controls:1,modestbranding:1,rel:0,iv_load_policy:3,playsinline:1,host:'https://www.youtube-nocookie.com'},
+      playerVars:{autoplay:1,controls:1,modestbranding:1,rel:0,iv_load_policy:3,playsinline:1},
       events:{
         onReady:e=>{e.target.setVolume(Math.min(100,currentVolume));if(startTime>0)e.target.seekTo(startTime,true);updatePauseBtn()},
         onStateChange:e=>{if(e.data===0)handleEnded();updatePauseBtn()},
         onError:e=>{
           console.warn('[YT]',e.data);
-          // Si falla YouTube, consultamos a Piped para obtener info, pero no mostramos error genérico feo.
+          // SI YOUTUBE BLOQUEA EL VIDEO, LO OCULTAMOS Y MOSTRAMOS UN MENSAJE LIMPIO
+          embed.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:1rem;">
+            <h3 style="margin-bottom:.5rem;">Video no disponible aquí</h3>
+            <p style="color:#94a3b8;font-size:.9rem;max-width:80%;">Este video tiene bloqueo de derechos de autor en reproductores web externos.</p>
+            <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="btn" style="margin-top:1rem;">Ver en YouTube ↗</a>
+          </div>`;
+          playerMode='none';
         }
       }
     });
@@ -443,11 +436,9 @@ function loadEmbedUrl(url,fallbackInfo){
   void embed.offsetHeight;
   let loaded=false;
   const iframe=document.createElement('iframe');
-  // NOTA: Dailymotion bloquea el video si no se envía el referer, por eso quitamos referrerpolicy="no-referrer" aquí
-  iframe.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write');
+  iframe.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture');
   iframe.setAttribute('allowfullscreen','true');
   iframe.setAttribute('frameborder','0');
-  iframe.setAttribute('scrolling','no');
   iframe.src=url;
   iframe.addEventListener('load',()=>{loaded=true});
   iframe.style.cssText='width:100%;height:100%;border:0;display:block;position:absolute;top:0;left:0';
@@ -541,8 +532,14 @@ async function playVideo(src,opts={}){
   }
   updateNavButtons();
 
+  // LIMPIAR TÍTULO INMEDIATAMENTE AL CAMBIAR DE VIDEO
+  currentVideoData=null;
+  $('videoTitle').textContent='Cargando video...';
+  $('videoMeta').textContent='';
+  $('videoDesc').textContent='';
+
   const token=++loadToken;
-  currentVideoId=null;currentVideoData=null;currentSource=src;
+  currentVideoId=null;currentSource=src;
   currentPlatform=src.type==='youtube'?'youtube':src.type;
 
   try{
@@ -566,27 +563,65 @@ async function playVideo(src,opts={}){
   if(currentVideoId)setTimeout(()=>pushHistory({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader()}),800);
 }
 
+/* ===== YOUTUBE REPRODUCTOR (Nuevo Flujo Corregido) ===== */
 async function loadYouTube(id,startTime,token){
-  createYTPlayer(id,startTime);
+  // 1. Intentar obtener datos y stream nativo con Piped
   try{
-    const data=await pipedFetch('/streams/'+id,4500);
+    const data=await pipedFetch('/streams/'+id,4000);
     if(token!==loadToken)return;
-    currentVideoData=data;setVideoInfoFromPiped(data);
+    
+    currentVideoData=data;
+    setVideoInfoFromPiped(data); // ACTUALIZA TÍTULO AQUÍ
+    
     if(data.relatedStreams){
       relatedCache[id]=data.relatedStreams.filter(r=>r.type==='stream'&&r.url)
         .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
     }
+    
     const nativeOk=await tryNativeFromData(id,startTime,data);
-    if(token!==loadToken)return;if(!nativeOk)return; // Si falla el nativo, se queda reproduciendo el iframe que ya creamos
-    if(player&&player.pauseVideo)try{player.pauseVideo()}catch(_){}
-    $('embedPlayer').style.display='none';$('nativePlayer').style.display='block';
-    playerMode='native';updateVolumeMax();
-    try{await $('nativePlayer').play()}catch(e){
-      try{$('nativePlayer').muted=true;await $('nativePlayer').play();toast('🔇 Toca para sonido')}catch(_){}}
-    applyVolume(currentVolume);updatePauseBtn();
-  }catch(e){
-    // NO ocultamos el reproductor de YouTube, solo mostramos una advertencia en consola
-    console.warn('piped fail (usando iframe):',e.message);
+    if(token!==loadToken)return;
+    if(nativeOk){
+      $('embedPlayer').style.display='none';$('nativePlayer').style.display='block';
+      playerMode='native';updateVolumeMax();
+      try{await $('nativePlayer').play()}catch(e){
+        try{$('nativePlayer').muted=true;await $('nativePlayer').play();toast('🔇 Toca para sonido')}catch(_){}
+      }
+      applyVolume(currentVolume);updatePauseBtn();
+      return; // ÉXITO CON PIPED
+    }
+  }catch(e){ console.warn('Piped falló, probando Invidious...'); }
+
+  // 2. Si Piped falla, intentar con Invidious
+  try{
+    const invRes=await invidiousFetch('/api/v1/videos/'+id, 4000);
+    if(token!==loadToken)return;
+    
+    const data=invRes.data;
+    currentVideoData=data;
+    setVideoInfoFromInvidious(data); // ACTUALIZA TÍTULO AQUÍ TAMBIÉN
+    
+    const nativeOk=await tryNativeFromInvidious(id,startTime,data);
+    if(token!==loadToken)return;
+    if(nativeOk){
+      $('embedPlayer').style.display='none';$('nativePlayer').style.display='block';
+      playerMode='native';updateVolumeMax();
+      try{await $('nativePlayer').play()}catch(e){
+        try{$('nativePlayer').muted=true;await $('nativePlayer').play();toast('🔇 Toca para sonido')}catch(_){}
+      }
+      applyVolume(currentVolume);updatePauseBtn();
+      return; // ÉXITO CON INVIDIOUS
+    }
+  }catch(e){ console.warn('Invidious también falló. Usando reproductor oficial.'); }
+
+  // 3. Fallback final: YouTube Iframe (con manejo de errores)
+  if(token!==loadToken)return;
+  createYTPlayer(id,startTime);
+  
+  // Intentar obtener el título aunque sea por búsqueda rápida para que no quede "Cargando..."
+  if(!currentVideoData || !currentVideoData.title) {
+    pipedFetch('/streams/'+id, 2000).then(d => {
+      if(d && d.title && token===loadToken) setVideoInfoFromPiped(d);
+    }).catch(()=>{});
   }
 }
 
@@ -597,6 +632,22 @@ async function tryNativeFromData(videoId,startTime,data){
     if(!streams.length)return false;
     streams.sort((a,b)=>{const a720=Math.abs((a.height||0)-720),b720=Math.abs((b.height||0)-720);
       if(a720!==b720)return a720-b720;return (b.height||0)-(a.height||0)});
+    const chosen=streams[0];const el=$('nativePlayer');
+    el.crossOrigin='anonymous';el.src=chosen.url;
+    const ok=await new Promise(resolve=>{let done=false;const fin=v=>{if(!done){done=true;resolve(v)}};
+      el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
+      el.addEventListener('error',()=>fin(false),{once:true});
+      setTimeout(()=>fin(false),4000)});
+    if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
+    if(startTime>0)el.currentTime=startTime;
+    setupBoost(el);detectNativeAudioTracks(el);return true;
+  }catch(_){return false}
+}
+
+async function tryNativeFromInvidious(videoId,startTime,data){
+  try{
+    const streams=(data.formatStreams||[]);
+    if(!streams.length)return false;
     const chosen=streams[0];const el=$('nativePlayer');
     el.crossOrigin='anonymous';el.src=chosen.url;
     const ok=await new Promise(resolve=>{let done=false;const fin=v=>{if(!done){done=true;resolve(v)}};
@@ -658,6 +709,7 @@ function playTVByIndex(idx){
 
 /* ===== Info ===== */
 function setVideoInfoFromPiped(data){
+  if(!data || !data.title) return;
   $('videoTitle').textContent=data.title||'';
   const meta=[];if(data.uploader)meta.push(data.uploader);
   if(data.views)meta.push(parseInt(data.views).toLocaleString()+' vistas');
@@ -666,6 +718,18 @@ function setVideoInfoFromPiped(data){
   $('videoDesc').classList.remove('expanded');$('toggleDesc').textContent='Mostrar más';
   $('toggleDesc').style.display=desc.length>200?'block':'none';
   availableSubtitles=(data.subtitles||[]).map(s=>({code:s.code,name:s.name||s.code,url:s.url,auto:s.autoGenerated||false,source:'yt'}));
+  $('videoInfo').classList.add('visible');
+}
+function setVideoInfoFromInvidious(data){
+  if(!data || !data.title) return;
+  $('videoTitle').textContent=data.title||'';
+  const meta=[];if(data.author)meta.push(data.author);
+  if(data.viewCount)meta.push(parseInt(data.viewCount).toLocaleString()+' vistas');
+  $('videoMeta').textContent=meta.join(' · ');
+  const desc=data.description||'';$('videoDesc').textContent=desc;
+  $('videoDesc').classList.remove('expanded');$('toggleDesc').textContent='Mostrar más';
+  $('toggleDesc').style.display=desc.length>200?'block':'none';
+  availableSubtitles=(data.captions||[]).map(c=>({code:c.language_code,name:c.label||c.language_code,url:c.url,auto:c.auto_generated||false,source:'yt'}));
   $('videoInfo').classList.add('visible');
 }
 function showBasicInfo(t,m,d){
@@ -863,27 +927,6 @@ function switchPlatform(plat){
   }
 }
 
-/* ===== Reverse image search ===== */
-$('searchInput').addEventListener('input',()=>{
-  const v=$('searchInput').value;
-  $('reverseSearchBar').classList.toggle('visible',isImageUrl(v));
-});
-document.querySelectorAll('[data-reverse]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    const img=$('searchInput').value.trim();
-    if(!isImageUrl(img)){toast('Pega una URL de imagen válida (.jpg/.png/.gif/.webp)');return}
-    const u=encodeURIComponent(img);
-    const services={
-      google:`https://lens.google.com/uploadbyurl?url=${u}`,
-      yandex:`https://yandex.com/images/search?rpt=imageview&url=${u}`,
-      tineye:`https://tineye.com/search?url=${u}`,
-      bing:`https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIVSP&sbisrc=UrlPaste&q=imgurl:${u}`
-    };
-    window.open(services[btn.dataset.reverse],'_blank','noopener noreferrer');
-    toast('↗️ Abriendo búsqueda inversa');
-  });
-});
-
 /* ===== Trending ===== */
 const FALLBACK_YT=[
   {id:'dQw4w9WgXcQ',title:'Rick Astley - Never Gonna Give You Up',uploader:'Rick Astley'},
@@ -896,7 +939,6 @@ async function loadTrending(){
   const topics = ['estrenos de peliculas 2025', 'nuevos animes 2025', 'trailers de series 2025', 'nuevos videojuegos 2025', 'estrenos musicales 2025'];
   const randomTopic = topics[Math.floor(Math.random() * topics.length)];
   try{
-    // En lugar de solo el trending general, hacemos una búsqueda variada
     const data=await pipedFetch('/search?q='+encodeURIComponent(randomTopic)+'&filter=videos', 5000);
     const items=(data.items||[]);
     if(items.length){
@@ -906,7 +948,6 @@ async function loadTrending(){
       })),'youtube');return}
     throw new Error('empty');
   }catch(_){
-    // Fallback al trending normal
     try{
       const data=await pipedFetch('/trending?region=US',5000);
       const items=Array.isArray(data)?data:(data.items||[]);
@@ -939,8 +980,7 @@ async function loadVimeoTrending(){
     const proxy='https://api.allorigins.win/raw?url='+encodeURIComponent('https://vimeo.com/channels/staffpicks/videos/rss');
     const res=await fetch(proxy);const text=await res.text();
     let items=parseVimeoRSS(text);
-    // Aleatorizar resultados
-    items = items.sort(() => 0.5 - Math.random());
+    items = items.sort(() => 0.5 - Math.random()); // Aleatorizar
     if(items.length){renderResults(items,'vimeo');return}throw new Error('empty');
   }catch(_){renderResults([
       {id:'76979871',title:'The Mountain — Vimeo Staff Picks',uploader:'Vimeo',thumbnail:'',platform:'vimeo'},
@@ -1052,7 +1092,6 @@ async function searchArchive(q){
       thumbnail:`https://archive.org/services/img/${v.identifier}`,url:`https://archive.org/details/${v.identifier}`,platform:'archive'}));
   }catch(_){return[]}
 }
-/* SearXNG: buscador real de toda la web (Google/Bing/DDG/Brave/Qwant agregados) */
 const SEARXNG_INSTANCES=[
   'https://searx.tiekoetter.com','https://baresearch.org','https://search.inetol.net',
   'https://paulgo.io','https://searxng.site','https://opnxng.com','https://searx.be',
@@ -1062,7 +1101,6 @@ async function searchSearXNG(q,category='videos'){
   const ps=SEARXNG_INSTANCES.map(async base=>{
     const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),5000);
     try{
-      // Usamos el proxy de allorigins para evitar bloqueos de CORS
       const targetUrl = `${base}/search?q=${encodeURIComponent(q)}&format=json&categories=${category}&language=all&safesearch=0`;
       const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
       const res=await fetch(proxyUrl,{signal:ctrl.signal});
@@ -1248,7 +1286,7 @@ function showAddToList(video,anchor){
     else addToList(video,item.dataset.lid);close()}));
 }
 
-/* ===== TV multi-source ===== */
+/* ===== TV ===== */
 const TV_COUNTRIES=[
   {code:'mx',name:'México'},{code:'es',name:'España'},{code:'ar',name:'Argentina'},
   {code:'co',name:'Colombia'},{code:'ve',name:'Venezuela'},{code:'cl',name:'Chile'},
@@ -1272,7 +1310,6 @@ const TV_CATEGORIES=[
   {slug:'animation',name:'🎨 Animación'},{slug:'series',name:'📺 Series'},
   {slug:'comedy',name:'😂 Comedia'},{slug:'family',name:'👨‍👩‍👧 Familiar'}
 ];
-/* Fuentes adicionales de IPTV corregidas para usar iptv-org */
 const TV_EXTRA_SOURCES={
   tdtchannels:'https://www.tdtchannels.com/lists/tv.m3u8',
   pluto:'https://iptv-org.github.io/iptv/categories/movies.m3u',
