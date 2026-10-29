@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name="theme-color" content="#06b6d4">
-<meta name="referrer" content="no-referrer">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>NexusTube</title>
@@ -263,7 +262,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(
 caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{try{if(r.ok&&new URL(e.request.url).origin===location.origin){
-const cl=r.clone();caches.open('nx-v10').then(ca=>ca.put(e.request,cl));}}catch(_){}
+const cl=r.clone();caches.open('nx-v11').then(ca=>ca.put(e.request,cl));}}catch(_){}
 return r;}).catch(()=>caches.match('./'))));});`;
     try{const u=URL.createObjectURL(new Blob([sw],{type:'application/javascript'}));
       navigator.serviceWorker.register(u).catch(()=>{});}catch(_){}
@@ -309,7 +308,8 @@ const PIPED=['https://pipedapi.kavin.rocks','https://pipedapi.adminforge.de','ht
   'https://pipedapi.drgns.space','https://pipedapi.reallyaweso.me','https://piped-api.lunar.icu'];
 const INVIDIOUS=['https://inv.nadeko.net','https://invidious.f5.si','https://invidious.privacyredirect.com',
   'https://invidious.jing.rocks','https://invidious.reallyaweso.me','https://yewtu.be'];
-const COBALT=['https://api.cobalt.tools/','https://cobalt-api.kwiatekmiki.com/','https://co.wuk.sh/api/json'];
+const COBALT=['https://api.cobalt.tools/','https://cobalt-api.kwiatekmiki.com/','https://co.wuk.sh/api/json',
+  'https://cobalt-api.meowing.de/','https://cobalt-api.ayo.tf/','https://cobalt-api.ayo.tf/api/json'];
 
 async function pipedFetch(path,timeout=4000){
   const ps=PIPED.map(async base=>{
@@ -339,7 +339,7 @@ async function cobaltFetch(videoId) {
     for (const ep of COBALT) {
         try {
             const ctrl = new AbortController();
-            const t = setTimeout(() => ctrl.abort(), 5000);
+            const t = setTimeout(() => ctrl.abort(), 6000);
             const res = await fetch(ep, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
@@ -551,7 +551,7 @@ async function loadYouTube(id,startTime,token){
   // Usamos un iframe "limpio" pero no podemos saltarnos la publicidad ni el bloqueo del autor.
   if(token!==loadToken)return;
   destroyPlayer();
-  $('embedPlayer').innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1&origin=${encodeURIComponent(window.location.origin)}" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+  $('embedPlayer').innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1&origin=${encodeURIComponent(window.location.origin)}" allow="autoplay; fullscreen" referrerpolicy="origin" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
   $('embedPlayer').style.display='block';
   playerMode='iframe';
   toast('⚠️ Reproduciendo en modo compatible (puede tener anuncios)');
@@ -1216,10 +1216,9 @@ function renderLists(){
   if(clearBtn) {
     clearBtn.onclick = (e) => {
       e.stopPropagation();
-      if(confirm('¿Borrar todo el historial de reproducción?')) {
+      if(confirm('¿Deseas eliminar el historial?')) {
         localStorage.setItem('nx_history', '[]');
         renderLists();
-        toast('Historial borrado');
       }
     };
   }
