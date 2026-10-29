@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name="theme-color" content="#06b6d4">
-<meta name="referrer" content="no-referrer">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>NexusTube</title>
@@ -53,10 +52,6 @@ header{display:flex;align-items:center;gap:1rem;padding:1rem 2rem;border-bottom:
   white-space:nowrap;transition:all .2s;flex-shrink:0}
 .plat-btn:hover{background:rgba(6,182,212,.1);color:var(--text)}
 .plat-btn.active{background:rgba(6,182,212,.2);color:var(--accent);border-color:var(--accent)}
-#reverseSearchBar{display:none;gap:.4rem;padding:.4rem 2rem;background:rgba(251,191,36,.08);
-  border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
-#reverseSearchBar.visible{display:flex}
-#reverseSearchBar span{font-size:.75rem;color:var(--muted)}
 main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:2rem;display:grid;grid-template-columns:1fr 360px;gap:2rem}
 @media(max-width:1024px){main{grid-template-columns:1fr;padding:1rem}}
 @media(max-width:640px){header{padding:.75rem 1rem;gap:.5rem}.platforms-bar{padding:.4rem 1rem}
@@ -95,10 +90,6 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-ra
 .video-info .desc.expanded{max-height:500px;overflow-y:auto}
 .video-info .toggle-desc{background:none;border:none;color:var(--accent);cursor:pointer;
   font-size:.8rem;margin-top:.4rem;padding:0;font-weight:600;display:none}
-#externalFallback{margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);
-  display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
-#externalFallback span{font-size:.8rem;color:var(--muted)}
-#externalFallback a{padding:.4rem .9rem;font-size:.8rem}
 .playlist-sidebar{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--border);
   border-radius:12px;padding:0;max-height:750px;display:flex;flex-direction:column;overflow:hidden}
 .sidebar-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -200,14 +191,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
   <button class="btn btn-secondary" id="installBtn">📲</button>
 </header>
 
-<div id="reverseSearchBar">
-  <span>🔍 Búsqueda inversa:</span>
-  <button class="plat-btn" data-reverse="google">Google Lens</button>
-  <button class="plat-btn" data-reverse="yandex">Yandex</button>
-  <button class="plat-btn" data-reverse="tineye">TinEye</button>
-  <button class="plat-btn" data-reverse="bing">Bing Visual</button>
-</div>
-
 <div class="platforms-bar">
   <button class="plat-btn active" data-plat="youtube">▶️ YouTube</button>
   <button class="plat-btn" data-plat="dailymotion">🎬 Dailymotion</button>
@@ -262,7 +245,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 <button class="exit-fs-btn" id="exitFsBtn" aria-label="Salir de pantalla completa">✕</button>
 <div class="toast" id="toast"></div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script>
 /* ===== PWA ===== */
@@ -280,7 +262,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(
 caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{try{if(r.ok&&new URL(e.request.url).origin===location.origin){
-const cl=r.clone();caches.open('nx-v8').then(ca=>ca.put(e.request,cl));}}catch(_){}
+const cl=r.clone();caches.open('nx-v12').then(ca=>ca.put(e.request,cl));}}catch(_){}
 return r;}).catch(()=>caches.match('./'))));});`;
     try{const u=URL.createObjectURL(new Blob([sw],{type:'application/javascript'}));
       navigator.serviceWorker.register(u).catch(()=>{});}catch(_){}
@@ -290,7 +272,7 @@ return r;}).catch(()=>caches.match('./'))));});`;
   ib.addEventListener('click',async()=>{if(!dp)return;dp.prompt();try{await dp.userChoice}catch(_){}dp=null;ib.classList.remove('visible')});
 })();
 
-/* ===== Christmas (25 nov → 6 ene) ===== */
+/* ===== Christmas ===== */
 function isChristmasSeason(){const n=new Date(),m=n.getMonth(),d=n.getDate();
   if(m===10&&d>=25)return true;if(m===11)return true;if(m===0&&d<=6)return true;return false}
 if(isChristmasSeason())document.body.classList.add('christmas');
@@ -312,25 +294,24 @@ function fmtDur(sec){if(sec===undefined||sec===null||sec<0||isNaN(sec))return ''
   sec=Math.floor(sec);const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
   if(h>0)return h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
   return m+':'+String(s).padStart(2,'0')}
-function isImageUrl(s){return /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|bmp)(\?|#|$)/i.test((s||'').trim())}
 function detectSource(input){if(!input)return null;const s=input.trim();
   if(/\.(mp4|webm|ogg|ogv|mov|m4v|m3u8)(\?|#|$)/i.test(s))return{type:'direct',url:s};
   const yt=parseVideoId(s);if(yt)return{type:'youtube',id:yt};
   const vm=s.match(/vimeo\.com\/(?:video\/)?(\d+)/);if(vm)return{type:'vimeo',id:vm[1]};
   const dm=s.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/);if(dm)return{type:'dailymotion',id:dm[1]};
-  const ia=s.match(/archive\.org\/(?:details|embed)\/([^\/\?]+)/);if(ia)return{type:'archive',id:ia[1]};
   if(/^https?:\/\//.test(s))return{type:'iframe',url:s};
   if(/^[a-zA-Z0-9_-]{11}$/.test(s))return{type:'youtube',id:s};
   return null}
 
-/* ===== APIs ===== */
+/* ===== APIs (VLC-Style Fallbacks) ===== */
 const PIPED=['https://pipedapi.kavin.rocks','https://pipedapi.adminforge.de','https://api.piped.private.coffee',
-  'https://pipedapi.drgns.space','https://pipedapi.reallyaweso.me','https://piped-api.lunar.icu',
-  'https://pipedapi.ducks.party','https://pipedapi.r4fo.com'];
+  'https://pipedapi.drgns.space','https://pipedapi.reallyaweso.me','https://piped-api.lunar.icu'];
 const INVIDIOUS=['https://inv.nadeko.net','https://invidious.f5.si','https://invidious.privacyredirect.com',
   'https://invidious.jing.rocks','https://invidious.reallyaweso.me','https://yewtu.be'];
+const COBALT=['https://api.cobalt.tools/','https://cobalt-api.kwiatekmiki.com/','https://co.wuk.sh/api/json',
+  'https://cobalt-api.meowing.de/','https://cobalt-api.ayo.tf/'];
 
-async function pipedFetch(path,timeout=5000){
+async function pipedFetch(path,timeout=4000){
   const ps=PIPED.map(async base=>{
     const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),timeout);
     try{const res=await fetch(base+path,{signal:ctrl.signal});clearTimeout(t);
@@ -339,9 +320,39 @@ async function pipedFetch(path,timeout=5000){
   return await Promise.any(ps);
 }
 
+async function invidiousFetch(path,timeout=4000){
+  const ps=INVIDIOUS.map(async base=>{
+    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),timeout);
+    try{const res=await fetch(base+path,{signal:ctrl.signal});clearTimeout(t);
+      if(!res.ok)throw 0;return {data:await res.json(),base}}catch(_){clearTimeout(t);throw 0}
+  });
+  return await Promise.any(ps);
+}
+
+async function cobaltFetch(videoId) {
+    const payload = { url: "https://www.youtube.com/watch?v=" + videoId, videoQuality: "720", downloadMode: "auto" };
+    for (const ep of COBALT) {
+        try {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 5000);
+            const res = await fetch(ep, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: ctrl.signal
+            });
+            clearTimeout(t);
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (data.url) return data.url;
+        } catch (e) {}
+    }
+    return null;
+}
+
 /* ===== State ===== */
-let player=null,playerMode='none',currentVideoId=null,currentPlatform='youtube',
-    currentSource=null,currentVideoData=null,ytReady=false,pendingIframe=null,
+let playerMode='none',currentVideoId=null,currentPlatform='youtube',
+    currentSource=null,currentVideoData=null,currentCategory='',
     currentVolume=100,loadToken=0,isAutoAdvancing=false,recentlyPlayed=new Set(),
     navHistory=[],navIdx=-1,audioCtx=null,gainNode=null,mediaSourceNode=null,
     connectedVideo=null,audioResumeListenerAttached=false;
@@ -349,9 +360,6 @@ const relatedCache={};
 let hlsInstance=null,availableSubtitles=[],availableAudioTracks=[],
     currentAudioTrackId=null,currentSubtitle=null;
 let tvSeqList=[],tvSeqIdx=-1,tvGlobalCache=null;
-
-window.onYouTubeIframeAPIReady=function(){ytReady=true;
-  if(pendingIframe){const v=pendingIframe;pendingIframe=null;createYTPlayer(v.id,v.startTime||0)}};
 
 function attachAudioResumeListener(){
   if(audioResumeListenerAttached)return;audioResumeListenerAttached=true;
@@ -362,8 +370,6 @@ function attachAudioResumeListener(){
       const boosted=setupBoost($('nativePlayer'));if(boosted){updateVolumeMax();applyVolume(currentVolume)}}
   }catch(_){}};
   document.addEventListener('click',bootstrap,{passive:true});
-  document.addEventListener('touchstart',bootstrap,{passive:true});
-  document.addEventListener('keydown',bootstrap,{passive:true});
 }
 
 /* ===== Volume ===== */
@@ -381,12 +387,9 @@ function applyVolume(v){
     const el=$('nativePlayer');if(el.muted&&currentVolume>0)el.muted=false;
     if(gainNode&&audioCtx&&audioCtx.state==='running'){gainNode.gain.value=currentVolume/100;el.volume=1}
     else el.volume=Math.min(1,currentVolume/100);
-  }else if(playerMode==='iframe'&&player&&player.setVolume){
-    try{player.setVolume(Math.min(100,currentVolume))}catch(_){}
   }
 }
 $('volumeRange').addEventListener('input',e=>applyVolume(parseInt(e.target.value,10)));
-
 function setupBoost(videoEl){try{
   if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return false}}
   if(audioCtx.state!=='running'){gainNode=null;return false}
@@ -399,10 +402,8 @@ function setupBoost(videoEl){try{
   gainNode.gain.value=Math.min(currentVolume,500)/100;return true;
 }catch(e){gainNode=null;return false}}
 
-/* ===== Player core ===== */
+/* ===== Player Core ===== */
 function destroyPlayer(){
-  if(player&&typeof player.destroy==='function'){try{player.destroy()}catch(_){}}
-  player=null;
   if(hlsInstance){try{hlsInstance.destroy()}catch(_){}hlsInstance=null}
   const el=$('nativePlayer');el.style.display='none';
   try{el.pause();el.removeAttribute('src');el.load()}catch(_){}
@@ -410,121 +411,33 @@ function destroyPlayer(){
   const embed=$('embedPlayer');embed.style.display='none';embed.innerHTML='';
   playerMode='none';
   availableAudioTracks=[];currentAudioTrackId=null;availableSubtitles=[];currentSubtitle=null;
-  clearExternalFallback();
+  if('mediaSession' in navigator) navigator.mediaSession.playbackState='none';
 }
 
-function createYTPlayer(id,startTime=0){
-  destroyPlayer();
-  const embed=$('embedPlayer');
-  embed.innerHTML='<div id="ytSlot" style="width:100%;height:100%"></div>';
-  embed.style.display='block';
-  if(!ytReady){pendingIframe={id,startTime};return}
-  try{
-    player=new YT.Player('ytSlot',{
-      videoId:id,width:'100%',height:'100%',
-      playerVars:{autoplay:1,controls:1,modestbranding:1,rel:0,iv_load_policy:3,playsinline:1},
-      events:{
-        onReady:e=>{e.target.setVolume(Math.min(100,currentVolume));if(startTime>0)e.target.seekTo(startTime,true);updatePauseBtn()},
-        onStateChange:e=>{if(e.data===0)handleEnded();updatePauseBtn()},
-        onError:e=>console.warn('[YT]',e.data)
-      }
-    });
-    playerMode='iframe';updateVolumeMax();
-  }catch(e){console.warn('YT create fail',e)}
-}
-
-/* Embed loader con detección de fallo + fallback link */
 function loadEmbedUrl(url,fallbackInfo){
   destroyPlayer();
   const embed=$('embedPlayer');
-  void embed.offsetHeight; // reflow forzado
-  let loaded=false;
+  void embed.offsetHeight;
   const iframe=document.createElement('iframe');
-  iframe.setAttribute('referrerpolicy','no-referrer');
-  iframe.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write');
+  iframe.setAttribute('allow','autoplay; fullscreen; encrypted-media; picture-in-picture');
   iframe.setAttribute('allowfullscreen','true');
   iframe.setAttribute('frameborder','0');
-  iframe.setAttribute('scrolling','no');
   iframe.src=url;
-  iframe.addEventListener('load',()=>{loaded=true});
   iframe.style.cssText='width:100%;height:100%;border:0;display:block;position:absolute;top:0;left:0';
   embed.appendChild(iframe);
   embed.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;display:block;background:#000';
   playerMode='iframe';updateVolumeMax();updatePauseBtn();
-
-  if(fallbackInfo&&fallbackInfo.url)showExternalFallback(fallbackInfo.url,fallbackInfo.name);
-  else clearExternalFallback();
-
-  if(fallbackInfo&&fallbackInfo.url){
-    setTimeout(()=>{
-      if(!loaded){
-        const overlay=document.createElement('div');
-        overlay.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,15,28,.92);z-index:15;gap:1rem;padding:2rem;text-align:center';
-        overlay.innerHTML=`<p style="color:#94a3b8;font-size:.9rem;max-width:400px">No se pudo incrustar este video en tu dispositivo.</p>
-          <a href="${fallbackInfo.url}" target="_blank" rel="noopener noreferrer" class="btn">Abrir en ${fallbackInfo.name} ↗</a>`;
-        embed.appendChild(overlay);
-      }
-    },6000);
-  }
-}
-
-function showExternalFallback(url,name){
-  clearExternalFallback();
-  const info=$('videoInfo');
-  if(!info)return;
-  const link=document.createElement('div');
-  link.id='externalFallback';
-  link.innerHTML=`<span>¿No se reproduce? Está disponible en su sitio original</span>
-    <a href="${url}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Abrir en ${name} ↗</a>`;
-  info.appendChild(link);
-}
-function clearExternalFallback(){const el=$('externalFallback');if(el)el.remove()}
-
-/* Dailymotion/Vimeo validation */
-async function isDailymotionEmbeddable(id){
-  try{
-    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),4000);
-    const res=await fetch(`https://api.dailymotion.com/video/${id}?fields=embeddable,status,private,title`,{signal:ctrl.signal});
-    clearTimeout(t);
-    if(!res.ok)return null;
-    const d=await res.json();
-    return{embeddable:d.embeddable===true&&d.status==='published'&&!d.private,title:d.title};
-  }catch(_){return null}
-}
-async function isVimeoEmbeddable(id){
-  try{
-    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),4000);
-    const res=await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent('https://vimeo.com/'+id)}`,{signal:ctrl.signal});
-    clearTimeout(t);
-    if(!res.ok)return{embeddable:false};
-    const d=await res.json();
-    return{embeddable:!!(d.html&&d.html.includes('<iframe')),title:d.title};
-  }catch(_){return null}
 }
 
 async function playDailymotion(id,title){
-  const check=await isDailymotionEmbeddable(id);
-  if(check&&!check.embeddable){
-    destroyPlayer();
-    showBasicInfo(title||check.title||'Dailymotion',`dailymotion.com/video/${id}`,'Este video no permite reproducción incrustada.');
-    showExternalFallback(`https://www.dailymotion.com/video/${id}`,'Dailymotion');
-    return;
-  }
   loadEmbedUrl(`https://www.dailymotion.com/embed/video/${id}?autoplay=1&queue-enable=false`,
     {url:`https://www.dailymotion.com/video/${id}`,name:'Dailymotion'});
-  showBasicInfo(title||check?.title||'Dailymotion',`dailymotion.com/video/${id}`,'');
+  showBasicInfo(title||'Dailymotion',`dailymotion.com/video/${id}`,'');
 }
 async function playVimeo(id,title){
-  const check=await isVimeoEmbeddable(id);
-  if(check&&!check.embeddable){
-    destroyPlayer();
-    showBasicInfo(title||check.title||'Vimeo',`vimeo.com/${id}`,'Este video no permite reproducción incrustada.');
-    showExternalFallback(`https://vimeo.com/${id}`,'Vimeo');
-    return;
-  }
   loadEmbedUrl(`https://player.vimeo.com/video/${id}?autoplay=1&title=0&byline=0&portrait=0&dnt=1`,
     {url:`https://vimeo.com/${id}`,name:'Vimeo'});
-  showBasicInfo(title||check?.title||'Vimeo',`vimeo.com/${id}`,'');
+  showBasicInfo(title||'Vimeo',`vimeo.com/${id}`,'');
 }
 
 /* ===== playVideo ===== */
@@ -538,9 +451,18 @@ async function playVideo(src,opts={}){
   }
   updateNavButtons();
 
+  // Limpiar datos anteriores inmediatamente
+  currentVideoData=null;
+  $('videoTitle').textContent='Cargando video...';
+  $('videoMeta').textContent='';
+  $('videoDesc').textContent='';
+
   const token=++loadToken;
-  currentVideoId=null;currentVideoData=null;currentSource=src;
+  currentVideoId=null;currentSource=src;
   currentPlatform=src.type==='youtube'?'youtube':src.type;
+  
+  if(opts.category) currentCategory = opts.category;
+  else if(src.type==='youtube' && opts.title) currentCategory = opts.title;
 
   try{
     if(src.type==='youtube'){currentVideoId=src.id;markPlayed(src.id);
@@ -548,10 +470,6 @@ async function playVideo(src,opts={}){
     else if(src.type==='direct'){await loadDirect(src.url,opts.startTime||0);showBasicInfo('Video','','')}
     else if(src.type==='vimeo'){await playVimeo(src.id,opts.title)}
     else if(src.type==='dailymotion'){await playDailymotion(src.id,opts.title)}
-    else if(src.type==='archive'){
-      loadEmbedUrl(`https://archive.org/embed/${src.id}`,{url:`https://archive.org/details/${src.id}`,name:'Archive.org'});
-      showBasicInfo('Internet Archive',`archive.org/details/${src.id}`,'');
-    }
     else if(src.type==='iframe'){
       loadEmbedUrl(src.url,{url:src.url,name:'sitio original'});
       showBasicInfo('Video externo',src.url,'');
@@ -563,25 +481,90 @@ async function playVideo(src,opts={}){
   if(currentVideoId)setTimeout(()=>pushHistory({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader()}),800);
 }
 
+/* ===== YOUTUBE REPRODUCTOR VLC-ROBUSTO (Nativo + Iframe corregido) ===== */
 async function loadYouTube(id,startTime,token){
-  createYTPlayer(id,startTime);
+  // 1. Obtener título por noembed (Rápido, siempre funciona para actualizar los textos)
+  fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`)
+    .then(r => r.json())
+    .then(data => {
+      if(token===loadToken && data.title) {
+        currentCategory = data.author_name || '';
+        $('videoTitle').textContent = data.title;
+        $('videoMeta').textContent = data.author_name || '';
+        $('videoInfo').classList.add('visible');
+        updateMediaSession(data.title, data.author_name);
+      }
+    }).catch(()=>{});
+
+  // 2. Intentar Piped
   try{
-    const data=await pipedFetch('/streams/'+id,4500);
+    const data=await pipedFetch('/streams/'+id,4000);
     if(token!==loadToken)return;
-    currentVideoData=data;setVideoInfoFromPiped(data);
+    currentVideoData=data;
+    setVideoInfoFromPiped(data);
+    if(data.uploader) currentCategory = data.uploader;
     if(data.relatedStreams){
       relatedCache[id]=data.relatedStreams.filter(r=>r.type==='stream'&&r.url)
         .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
     }
     const nativeOk=await tryNativeFromData(id,startTime,data);
-    if(token!==loadToken)return;if(!nativeOk)return;
-    if(player&&player.pauseVideo)try{player.pauseVideo()}catch(_){}
-    $('embedPlayer').style.display='none';$('nativePlayer').style.display='block';
-    playerMode='native';updateVolumeMax();
-    try{await $('nativePlayer').play()}catch(e){
-      try{$('nativePlayer').muted=true;await $('nativePlayer').play();toast('🔇 Toca para sonido')}catch(_){}}
-    applyVolume(currentVolume);updatePauseBtn();
-  }catch(e){console.warn('piped fail:',e.message)}
+    if(token!==loadToken)return;
+    if(nativeOk) return; // Éxito con Piped
+  }catch(e){ console.warn('Piped falló, intentando Invidious...'); }
+
+  // 3. Intentar Invidious (Con local=true para evitar 403)
+  try{
+    const invRes=await invidiousFetch('/api/v1/videos/'+id, 4000);
+    if(token!==loadToken)return;
+    const data=invRes.data;
+    currentVideoData=data;
+    setVideoInfoFromInvidious(data);
+    if(data.author) currentCategory = data.author;
+    
+    const streams = data.formatStreams || [];
+    if(streams.length > 0) {
+      let best = streams.find(s => s.itag === '22' || s.qualityLabel === '720p') || streams[0];
+      const proxyUrl = `${invRes.base}/latest_version?id=${id}&itag=${best.itag}&local=true`;
+      const ok = await tryLoadVideoElement(proxyUrl, startTime);
+      if(ok) return;
+    }
+  }catch(e){ console.warn('Invidious también falló. Probando Cobalt API...'); }
+
+  // 4. Intentar Cobalt API (Motor robusto anti-bloqueos)
+  try {
+    const cobaltUrl = await cobaltFetch(id);
+    if(token!==loadToken)return;
+    if(cobaltUrl) {
+      const ok = await tryLoadVideoElement(cobaltUrl, startTime);
+      if(ok) return;
+    }
+  } catch(e) { console.warn('Cobalt falló.'); }
+
+  // 5. Fallback final: YouTube Iframe (Corregido Error 153)
+  if(token!==loadToken)return;
+  destroyPlayer();
+  const embed=$('embedPlayer');
+  
+  // NOTA CRÍTICA: Se elimina 'origin' de la URL y se usa youtube-nocookie.com para evitar Error 153
+  // También añadimos un overlay de seguridad para ocultar el error feo si llega a ocurrir
+  const iframe=document.createElement('iframe');
+  iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
+  iframe.setAttribute('allow','autoplay; fullscreen; encrypted-media');
+  iframe.setAttribute('allowfullscreen','true');
+  iframe.style.cssText='width:100%;height:100%;border:0;position:absolute;top:0;left:0;z-index:10;';
+  
+  embed.innerHTML='';
+  embed.appendChild(iframe);
+  
+  // Overlay invisible para capturar clics si el iframe muestra error y ofrecer el link
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:absolute;bottom:10px;right:10px;z-index:20;';
+  overlay.innerHTML = `<a href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener" class="btn" style="background:rgba(0,0,0,.7);font-size:0.7rem;padding:4px 8px;">Si no reproduce, clic aquí ↗</a>`;
+  embed.appendChild(overlay);
+  
+  embed.style.display='block';
+  playerMode='iframe';
+  updateVolumeMax();updatePauseBtn();
 }
 
 async function tryNativeFromData(videoId,startTime,data){
@@ -591,16 +574,37 @@ async function tryNativeFromData(videoId,startTime,data){
     if(!streams.length)return false;
     streams.sort((a,b)=>{const a720=Math.abs((a.height||0)-720),b720=Math.abs((b.height||0)-720);
       if(a720!==b720)return a720-b720;return (b.height||0)-(a.height||0)});
-    const chosen=streams[0];const el=$('nativePlayer');
-    el.crossOrigin='anonymous';el.src=chosen.url;
-    const ok=await new Promise(resolve=>{let done=false;const fin=v=>{if(!done){done=true;resolve(v)}};
-      el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
-      el.addEventListener('error',()=>fin(false),{once:true});
-      setTimeout(()=>fin(false),4000)});
-    if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
-    if(startTime>0)el.currentTime=startTime;
-    setupBoost(el);detectNativeAudioTracks(el);return true;
+    const chosen=streams[0];
+    return await tryLoadVideoElement(chosen.url, startTime);
   }catch(_){return false}
+}
+
+async function tryLoadVideoElement(url, startTime) {
+  const el=$('nativePlayer');
+  el.crossOrigin='anonymous';
+  el.src=url;
+  const ok=await new Promise(resolve=>{
+    let done=false;
+    const fin=v=>{if(!done){done=true;resolve(v)}};
+    el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
+    el.addEventListener('error',()=>fin(false),{once:true});
+    setTimeout(()=>fin(false),5000);
+  });
+  if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
+  if(startTime>0)el.currentTime=startTime;
+  setupBoost(el);
+  detectNativeAudioTracks(el);
+  
+  $('embedPlayer').style.display='none';
+  el.style.display='block';
+  playerMode='native';
+  updateVolumeMax();
+  try{await el.play()}catch(e){
+    try{el.muted=true;await el.play();toast('🔇 Toca para sonido')}catch(_){}
+  }
+  applyVolume(currentVolume);
+  updatePauseBtn();
+  return true;
 }
 
 async function loadDirect(url,startTime){
@@ -650,17 +654,45 @@ function playTVByIndex(idx){
   playVideo({type:'tv',channel:ch,idx},{title:ch.name});
 }
 
-/* ===== Info ===== */
+/* ===== Info & MediaSession ===== */
+function updateMediaSession(title, artist) {
+  if('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title,
+      artist: artist,
+      album: 'NexusTube',
+      artwork: [{src: `https://i.ytimg.com/vi/${currentVideoId}/mqdefault.jpg`, sizes: '320x180', type: 'image/jpeg'}]
+    });
+  }
+}
+
 function setVideoInfoFromPiped(data){
+  if(!data || !data.title) return;
   $('videoTitle').textContent=data.title||'';
   const meta=[];if(data.uploader)meta.push(data.uploader);
   if(data.views)meta.push(parseInt(data.views).toLocaleString()+' vistas');
   $('videoMeta').textContent=meta.join(' · ');
-  const desc=data.description||'';$('videoDesc').textContent=desc;
+  let desc=data.description||'';desc = desc.replace(/<br>/g, '\n').replace(/<[^>]*>?/gm, '');
+  $('videoDesc').textContent=desc;
   $('videoDesc').classList.remove('expanded');$('toggleDesc').textContent='Mostrar más';
   $('toggleDesc').style.display=desc.length>200?'block':'none';
   availableSubtitles=(data.subtitles||[]).map(s=>({code:s.code,name:s.name||s.code,url:s.url,auto:s.autoGenerated||false,source:'yt'}));
   $('videoInfo').classList.add('visible');
+  updateMediaSession(data.title, data.uploader || '');
+}
+function setVideoInfoFromInvidious(data){
+  if(!data || !data.title) return;
+  $('videoTitle').textContent=data.title||'';
+  const meta=[];if(data.author)meta.push(data.author);
+  if(data.viewCount)meta.push(parseInt(data.viewCount).toLocaleString()+' vistas');
+  $('videoMeta').textContent=meta.join(' · ');
+  const desc=data.description||'';
+  $('videoDesc').textContent=desc;
+  $('videoDesc').classList.remove('expanded');$('toggleDesc').textContent='Mostrar más';
+  $('toggleDesc').style.display=desc.length>200?'block':'none';
+  availableSubtitles=(data.captions||[]).map(c=>({code:c.language_code,name:c.label||c.language_code,url:c.url,auto:c.auto_generated||false,source:'yt'}));
+  $('videoInfo').classList.add('visible');
+  updateMediaSession(data.title, data.author || '');
 }
 function showBasicInfo(t,m,d){
   $('videoTitle').textContent=t||'';$('videoMeta').textContent=m||'';$('videoDesc').textContent=d||'';
@@ -716,10 +748,6 @@ $('audioBtn').addEventListener('click',(e)=>{e.stopPropagation();
 
 $('subsBtn').addEventListener('click',(e)=>{e.stopPropagation();
   if(hlsInstance)detectHLSSubs();
-  if(playerMode==='iframe'&&player&&player.getOption){
-    try{const tracks=player.getOption('captions','tracklist')||[];
-      tracks.forEach(t=>{if(!availableSubtitles.find(s=>s.code===t.languageCode))
-        availableSubtitles.push({code:t.languageCode,name:t.displayName||t.languageName||t.languageCode,auto:false,source:'yt-iframe'})})}catch(_){}}
   document.querySelectorAll('.ctx-menu').forEach(m=>m.remove());
   const menu=document.createElement('div');menu.className='ctx-menu';
   const rect=e.currentTarget.getBoundingClientRect();
@@ -745,10 +773,6 @@ function applySubtitle(code,src){
     else{const sub=availableSubtitles.find(s=>s.code===code&&s.source==='hls');
       if(sub){try{hlsInstance.subtitleTrack=sub.idx;hlsInstance.subtitleDisplay=true;toast('💬 '+sub.name);return}catch(_){}}}
   }
-  if(playerMode==='iframe'&&player&&player.setOption){
-    try{if(!code){player.unloadModule('captions')}
-      else{player.loadModule('captions');player.setOption('captions','track',{languageCode:code});player.setOption('captions','reload',true)}
-      toast(code?`💬 Subtítulos: ${code}`:'Subtítulos desactivados');return}catch(_){}}
   const el=$('nativePlayer');el.querySelectorAll('track').forEach(t=>t.remove());
   if(!code){toast('Subtítulos desactivados');return}
   const sub=availableSubtitles.find(s=>s.code===code);
@@ -762,19 +786,13 @@ function applySubtitle(code,src){
 /* ===== Pause/Repeat ===== */
 function updatePauseBtn(){const btn=$('pauseBtn');if(!btn)return;let playing=false;
   if(playerMode==='native')playing=!$('nativePlayer').paused;
-  else if(playerMode==='iframe'&&player&&player.getPlayerState){
-    try{playing=player.getPlayerState()===1}catch(_){}}
   btn.textContent=playing?'⏸':'▶'}
 $('pauseBtn').addEventListener('click',()=>{
   if(playerMode==='native'){const el=$('nativePlayer');
     if(el.paused)el.play().catch(()=>{});else el.pause();updatePauseBtn()}
-  else if(playerMode==='iframe'&&player){
-    try{const s=player.getPlayerState();if(s===1)player.pauseVideo();else player.playVideo()}catch(_){}
-    setTimeout(updatePauseBtn,200)}
   else if(currentSource)playVideo(currentSource,{noNav:true})});
 $('repeatBtn').addEventListener('click',()=>{
   if(playerMode==='native'){const el=$('nativePlayer');el.currentTime=0;el.play().catch(()=>{});toast('🔄 Reiniciado')}
-  else if(playerMode==='iframe'&&player&&player.seekTo){try{player.seekTo(0,true);player.playVideo();toast('🔄 Reiniciado')}catch(_){}}
   else if(currentSource)playVideo(currentSource,{noNav:true})});
 $('nativePlayer').addEventListener('play',updatePauseBtn);
 $('nativePlayer').addEventListener('pause',updatePauseBtn);
@@ -802,22 +820,44 @@ $('likeBtn').addEventListener('click',()=>{
   else{favs.push({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader(),ts:Date.now()});
     setFavs(favs);$('likeBtn').textContent='❤️';toast('❤️ Añadido')}});
 
-/* ===== Auto-next ===== */
+/* ===== Auto-next Inteligente (Categoría) ===== */
 async function pickRelated(id){
   if(!relatedCache[id]){try{const data=await pipedFetch('/streams/'+id,4000);
     relatedCache[id]=(data.relatedStreams||[]).filter(r=>r.type==='stream'&&r.url)
       .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
   }catch(_){relatedCache[id]=[]}}
-  const pool=(relatedCache[id]||[]).filter(v=>v.id!==id&&!recentlyPlayed.has(v.id));
-  if(!pool.length)return null;return pool[Math.floor(Math.random()*pool.length)]}
+  
+  let pool=(relatedCache[id]||[]).filter(v=>v.id!==id&&!recentlyPlayed.has(v.id));
+  if(!pool.length) return null;
+
+  // Filtrar por categoría (artista o título)
+  const currentArtist = currentCategory.toLowerCase();
+  const sameCategory = pool.filter(v => 
+    (v.uploader && v.uploader.toLowerCase().includes(currentArtist)) || 
+    (v.title && v.title.toLowerCase().includes(currentArtist))
+  );
+  
+  // Preferir la misma categoría, si no hay, elegir del pool general
+  const finalPool = sameCategory.length > 0 ? sameCategory : pool;
+  return finalPool[Math.floor(Math.random()*finalPool.length)];
+}
 async function handleEnded(){
   if(isAutoAdvancing)return;isAutoAdvancing=true;
   try{if(!currentVideoId)return;const next=await pickRelated(currentVideoId);
-    if(next){toast(`▶️ ${next.title.slice(0,50)}`,2500);await playVideo({type:'youtube',id:next.id},{title:next.title})}
+    if(next){toast(`▶️ ${next.title.slice(0,50)}`,2500);
+      const keepCat = next.uploader === currentCategory ? currentCategory : next.uploader;
+      await playVideo({type:'youtube',id:next.id},{title:next.title, category:keepCat})}
   }catch(e){console.warn(e)}finally{isAutoAdvancing=false}}
 function markPlayed(id){if(!id)return;recentlyPlayed.add(id);
   if(recentlyPlayed.size>60){const f=recentlyPlayed.values().next().value;recentlyPlayed.delete(f)}}
-$('nativePlayer').addEventListener('ended',handleEnded);
+
+$('nativePlayer').addEventListener('ended',()=>{
+  if(document.hidden) {
+    handleEnded(); // Forzar reproducción en segundo plano
+  } else {
+    handleEnded();
+  }
+});
 $('nativePlayer').addEventListener('play',()=>{isAutoAdvancing=false});
 
 /* ===== Fullscreen ===== */
@@ -857,45 +897,41 @@ function switchPlatform(plat){
   }
 }
 
-/* ===== Reverse image search ===== */
-$('searchInput').addEventListener('input',()=>{
-  const v=$('searchInput').value;
-  $('reverseSearchBar').classList.toggle('visible',isImageUrl(v));
-});
-document.querySelectorAll('[data-reverse]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    const img=$('searchInput').value.trim();
-    if(!isImageUrl(img)){toast('Pega una URL de imagen válida (.jpg/.png/.gif/.webp)');return}
-    const u=encodeURIComponent(img);
-    const services={
-      google:`https://lens.google.com/uploadbyurl?url=${u}`,
-      yandex:`https://yandex.com/images/search?rpt=imageview&url=${u}`,
-      tineye:`https://tineye.com/search?url=${u}`,
-      bing:`https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIVSP&sbisrc=UrlPaste&q=imgurl:${u}`
-    };
-    window.open(services[btn.dataset.reverse],'_blank','noopener noreferrer');
-    toast('↗️ Abriendo búsqueda inversa');
-  });
-});
-
 /* ===== Trending ===== */
 const FALLBACK_YT=[
   {id:'dQw4w9WgXcQ',title:'Rick Astley - Never Gonna Give You Up',uploader:'Rick Astley'},
   {id:'kJQP7kiw5Fk',title:'Luis Fonsi - Despacito',uploader:'Luis Fonsi'},
   {id:'9bZkp7q19f0',title:'PSY - GANGNAM STYLE',uploader:'officialpsy'}
 ];
+
 async function loadTrending(){
+  $('suggestionsList').innerHTML = '<div class="loading-msg">Cargando estrenos...</div>';
+  const topics = ['estrenos de peliculas 2025', 'nuevos animes 2025', 'trailers de series 2025', 'nuevos videojuegos 2025', 'estrenos musicales 2025'];
+  const randomTopic = topics[Math.floor(Math.random() * topics.length)];
   try{
-    const data=await pipedFetch('/trending?region=US',5000);
-    const items=Array.isArray(data)?data:(data.items||[]);
-    if(items.length){renderResults(items.slice(0,25).map(i=>({
-      id:extractId(i.url),title:i.title,uploader:i.uploaderName||i.uploader,
-      thumbnail:i.thumbnail,duration:i.duration,platform:'youtube'})),'youtube');return}
+    const data=await pipedFetch('/search?q='+encodeURIComponent(randomTopic)+'&filter=videos', 5000);
+    const items=(data.items||[]);
+    if(items.length){
+      renderResults(items.slice(0,25).map(i=>({
+        id:extractId(i.url),title:i.title,uploader:i.uploaderName||i.uploader,
+        thumbnail:i.thumbnail,duration:i.duration,platform:'youtube'
+      })),'youtube');return}
     throw new Error('empty');
   }catch(_){
-    renderResults(FALLBACK_YT.map(v=>({id:v.id,title:v.title,uploader:v.uploader,
-      thumbnail:`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`,platform:'youtube'})),'youtube')}
+    try{
+      const data=await pipedFetch('/trending?region=US',5000);
+      const items=Array.isArray(data)?data:(data.items||[]);
+      renderResults(items.slice(0,25).map(i=>({
+        id:extractId(i.url),title:i.title,uploader:i.uploaderName||i.uploader,
+        thumbnail:i.thumbnail,duration:i.duration,platform:'youtube'
+      })),'youtube');
+    }catch(e){
+      renderResults(FALLBACK_YT.map(v=>({id:v.id,title:v.title,uploader:v.uploader,
+        thumbnail:`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`,platform:'youtube'})),'youtube');
+    }
+  }
 }
+
 async function loadDailymotionTrending(){
   const list=$('suggestionsList');list.innerHTML='<div class="loading-msg">Cargando Dailymotion...</div>';
   try{
@@ -907,12 +943,14 @@ async function loadDailymotionTrending(){
     else list.innerHTML='<div class="empty-msg">Sin resultados</div>';
   }catch(e){list.innerHTML='<div class="empty-msg">❌ No se pudo cargar Dailymotion</div>'}
 }
+
 async function loadVimeoTrending(){
   const list=$('suggestionsList');list.innerHTML='<div class="loading-msg">Cargando Vimeo...</div>';
   try{
     const proxy='https://api.allorigins.win/raw?url='+encodeURIComponent('https://vimeo.com/channels/staffpicks/videos/rss');
     const res=await fetch(proxy);const text=await res.text();
-    const items=parseVimeoRSS(text);
+    let items=parseVimeoRSS(text);
+    items = items.sort(() => 0.5 - Math.random()); // Aleatorizar
     if(items.length){renderResults(items,'vimeo');return}throw new Error('empty');
   }catch(_){renderResults([
       {id:'76979871',title:'The Mountain — Vimeo Staff Picks',uploader:'Vimeo',thumbnail:'',platform:'vimeo'},
@@ -929,6 +967,7 @@ function parseVimeoRSS(xml){
         thumbnail:thM?thM[1]:'',platform:'vimeo'})}}
   return items.slice(0,20);
 }
+
 async function loadWebTrending(){
   const list=$('suggestionsList');list.innerHTML='<div class="loading-msg">Cargando de múltiples plataformas...</div>';
   const [yt,dm,ia]=await Promise.allSettled([
@@ -1023,7 +1062,6 @@ async function searchArchive(q){
       thumbnail:`https://archive.org/services/img/${v.identifier}`,url:`https://archive.org/details/${v.identifier}`,platform:'archive'}));
   }catch(_){return[]}
 }
-/* SearXNG: buscador real de toda la web (Google/Bing/DDG/Brave/Qwant agregados) */
 const SEARXNG_INSTANCES=[
   'https://searx.tiekoetter.com','https://baresearch.org','https://search.inetol.net',
   'https://paulgo.io','https://searxng.site','https://opnxng.com','https://searx.be',
@@ -1033,8 +1071,9 @@ async function searchSearXNG(q,category='videos'){
   const ps=SEARXNG_INSTANCES.map(async base=>{
     const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),5000);
     try{
-      const url=`${base}/search?q=${encodeURIComponent(q)}&format=json&categories=${category}&language=all&safesearch=0`;
-      const res=await fetch(url,{signal:ctrl.signal});
+      const targetUrl = `${base}/search?q=${encodeURIComponent(q)}&format=json&categories=${category}&language=all&safesearch=0`;
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+      const res=await fetch(proxyUrl,{signal:ctrl.signal});
       clearTimeout(t);if(!res.ok)throw 0;
       const data=await res.json();
       return (data.results||[]).map(r=>{
@@ -1113,7 +1152,7 @@ function renderResults(items,type){
       else if(plat==='vimeo')playVideo({type:'vimeo',id:item.id},{title:item.title});
       else if(plat==='peertube')playVideo({type:'iframe',url:item.url},{title:item.title});
       else if(plat==='archive')playVideo({type:'archive',id:item.id},{title:item.title});
-      else playVideo({type:'youtube',id:item.id},{title:item.title});
+      else playVideo({type:'youtube',id:item.id},{title:item.title, category:item.uploader});
       window.scrollTo({top:0,behavior:'smooth'});
     });
     list.appendChild(div);
@@ -1122,7 +1161,7 @@ function renderResults(items,type){
 }
 function highlightActive(id){document.querySelectorAll('.video-item').forEach(el=>el.classList.toggle('active',el.dataset.vid===id))}
 
-/* ===== Lists ===== */
+/* ===== Lists & History ===== */
 function getLists(){try{return JSON.parse(localStorage.getItem('nx_lists')||'[]')}catch(_){return[]}}
 function setLists(l){localStorage.setItem('nx_lists',JSON.stringify(l));renderLists()}
 function getHistory(){try{return JSON.parse(localStorage.getItem('nx_history')||'[]')}catch(_){return[]}}
@@ -1149,13 +1188,21 @@ function renderLists(){
         <span class="title">${esc(v.title||v.id)}</span>
         <div class="ctrl"><button data-act="remove">✕</button></div></div>`).join('')}
     </div></div></div>`;
-  html+=`<div class="pl-group"><div class="pl-header"><span class="name">🕒 Historial</span><span class="count">${history.length}</span></div>
+  
+  // HISTORIAL CON BOTÓN DE BORRAR TODO
+  html+=`<div class="pl-group" id="historyGroup">
+    <div class="pl-header">
+      <span class="name">🕒 Historial</span>
+      <span class="count">${history.length}</span>
+      <button id="clearHistoryBtn" style="background:rgba(239,68,68,.2); border:none; color:#ef4444; padding:2px 8px; border-radius:4px; cursor:pointer; font-size:0.7rem;">Borrar todo</button>
+    </div>
     <div class="pl-items"><div class="pl-items-inner">
     ${history.length===0?'<div class="dl-empty">Sin historial</div>':
       history.map(v=>`<div class="pl-item" data-vid="${esc(v.id)}" data-src="history">
         <span class="title">${esc(v.title||v.id)}</span>
         <div class="ctrl"><button data-act="remove">✕</button></div></div>`).join('')}
     </div></div></div>`;
+
   lists.forEach(list=>{
     html+=`<div class="pl-group" data-key="list-${esc(list.id)}">
       <div class="pl-header" data-listid="${esc(list.id)}">
@@ -1170,8 +1217,22 @@ function renderLists(){
       </div></div></div>`;
   });
   el.innerHTML=html;
+  
   $('newListBtn').onclick=()=>{const n=prompt('Nombre de la lista:');if(!n||!n.trim())return;
     const l=getLists();l.push({id:Date.now().toString(36),name:n.trim(),items:[]});setLists(l)};
+  
+  // Manejador de Borrar Todo el historial
+  const clearBtn = $('clearHistoryBtn');
+  if(clearBtn) {
+    clearBtn.onclick = (e) => {
+      e.stopPropagation();
+      if(confirm('¿Deseas eliminar el historial?')) {
+        localStorage.setItem('nx_history', '[]');
+        renderLists();
+      }
+    };
+  }
+
   el.querySelectorAll('.pl-header').forEach(h=>h.addEventListener('click',e=>{
     if(e.target.closest('button'))return;h.closest('.pl-group').classList.toggle('expanded')}));
   el.querySelectorAll('[data-act]').forEach(btn=>btn.addEventListener('click',e=>{
@@ -1217,7 +1278,7 @@ function showAddToList(video,anchor){
     else addToList(video,item.dataset.lid);close()}));
 }
 
-/* ===== TV multi-source ===== */
+/* ===== TV ===== */
 const TV_COUNTRIES=[
   {code:'mx',name:'México'},{code:'es',name:'España'},{code:'ar',name:'Argentina'},
   {code:'co',name:'Colombia'},{code:'ve',name:'Venezuela'},{code:'cl',name:'Chile'},
@@ -1241,13 +1302,12 @@ const TV_CATEGORIES=[
   {slug:'animation',name:'🎨 Animación'},{slug:'series',name:'📺 Series'},
   {slug:'comedy',name:'😂 Comedia'},{slug:'family',name:'👨‍👩‍👧 Familiar'}
 ];
-/* Fuentes adicionales de IPTV (listas M3U) */
 const TV_EXTRA_SOURCES={
   tdtchannels:'https://www.tdtchannels.com/lists/tv.m3u8',
-  pluto:'https://i.mjh.nz/PlutoTV/all.m3u8',
-  plex:'https://i.mjh.nz/Plex/all.m3u8',
-  samsung:'https://i.mjh.nz/SamsungTVPlus/all.m3u8',
-  lg:'https://i.mjh.nz/LGChannels/all.m3u8',
+  pluto:'https://iptv-org.github.io/iptv/categories/movies.m3u',
+  plex:'https://iptv-org.github.io/iptv/categories/series.m3u',
+  samsung:'https://iptv-org.github.io/iptv/categories/music.m3u',
+  lg:'https://iptv-org.github.io/iptv/categories/news.m3u',
   freeTvIntl:'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8'
 };
 
@@ -1267,12 +1327,12 @@ function showTVNav(){
   TV_COUNTRIES.forEach(c=>{html+=`<button class="tv-nav-btn" data-type="country" data-code="${c.code}">${c.name}</button>`});
   html+=`</div><div style="font-weight:600;margin:.75rem 0;font-size:.9rem">📚 Por categoría</div><div class="tv-nav">`;
   TV_CATEGORIES.forEach(c=>{html+=`<button class="tv-nav-btn" data-type="category" data-code="${c.slug}">${c.name}</button>`});
-  html+=`</div><div style="font-weight:600;margin:.75rem 0;font-size:.9rem">🎁 Fuentes Premium (Pluto, Plex, Samsung, LG)</div>
+  html+=`</div><div style="font-weight:600;margin:.75rem 0;font-size:.9rem">🎁 Fuentes Premium</div>
     <div class="tv-nav">
-      <button class="tv-nav-btn" data-type="source" data-code="pluto">🎬 Pluto TV</button>
-      <button class="tv-nav-btn" data-type="source" data-code="plex">📺 Plex</button>
-      <button class="tv-nav-btn" data-type="source" data-code="samsung">📱 Samsung TV+</button>
-      <button class="tv-nav-btn" data-type="source" data-code="lg">📺 LG Channels</button>
+      <button class="tv-nav-btn" data-type="source" data-code="pluto">🎬 Películas Premium</button>
+      <button class="tv-nav-btn" data-type="source" data-code="plex">📺 Series Premium</button>
+      <button class="tv-nav-btn" data-type="source" data-code="samsung">🎵 Música Premium</button>
+      <button class="tv-nav-btn" data-type="source" data-code="lg">📰 Noticias Premium</button>
       <button class="tv-nav-btn" data-type="source" data-code="tdtchannels">🇪🇸 TDTChannels</button>
       <button class="tv-nav-btn" data-type="source" data-code="freeTvIntl">🌍 Free-TV Intl</button>
     </div>`;
