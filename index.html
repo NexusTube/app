@@ -178,6 +178,13 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-ra
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(6,182,212,.3);border-radius:4px}
+
+/* MODAL PERSONALIZADO (Para evitar el "nexustube.github.io dice") */
+.custom-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.custom-modal.open{display:flex;}
+.custom-modal-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.5rem;max-width:400px;width:90%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.8);}
+.custom-modal-box p{font-size:1rem;margin-bottom:1.5rem;}
+.custom-modal-actions{display:flex;gap:1rem;justify-content:center;}
 </style>
 </head>
 <body>
@@ -245,6 +252,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 <button class="exit-fs-btn" id="exitFsBtn" aria-label="Salir de pantalla completa">✕</button>
 <div class="toast" id="toast"></div>
 
+<!-- Modal Personalizado -->
+<div class="custom-modal" id="confirmModal">
+  <div class="custom-modal-box">
+    <p id="confirmMsg">¿Deseas eliminar el historial?</p>
+    <div class="custom-modal-actions">
+      <button class="btn btn-secondary" id="confirmCancel">Cancelar</button>
+      <button class="btn" style="background:#ef4444;" id="confirmOk">Aceptar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script>
 /* ===== PWA ===== */
@@ -262,7 +280,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(
 caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{try{if(r.ok&&new URL(e.request.url).origin===location.origin){
-const cl=r.clone();caches.open('nx-v12').then(ca=>ca.put(e.request,cl));}}catch(_){}
+const cl=r.clone();caches.open('nx-v13').then(ca=>ca.put(e.request,cl));}}catch(_){}
 return r;}).catch(()=>caches.match('./'))));});`;
     try{const u=URL.createObjectURL(new Blob([sw],{type:'application/javascript'}));
       navigator.serviceWorker.register(u).catch(()=>{});}catch(_){}
@@ -303,7 +321,16 @@ function detectSource(input){if(!input)return null;const s=input.trim();
   if(/^[a-zA-Z0-9_-]{11}$/.test(s))return{type:'youtube',id:s};
   return null}
 
-/* ===== APIs (VLC-Style Fallbacks) ===== */
+/* Modal Personalizado */
+function showConfirm(msg, callback) {
+  $('confirmMsg').textContent = msg;
+  $('confirmModal').classList.add('open');
+  const close = () => { $('confirmModal').classList.remove('open'); };
+  $('confirmOk').onclick = () => { close(); callback(); };
+  $('confirmCancel').onclick = close;
+}
+
+/* ===== APIs ===== */
 const PIPED=['https://pipedapi.kavin.rocks','https://pipedapi.adminforge.de','https://api.piped.private.coffee',
   'https://pipedapi.drgns.space','https://pipedapi.reallyaweso.me','https://piped-api.lunar.icu'];
 const INVIDIOUS=['https://inv.nadeko.net','https://invidious.f5.si','https://invidious.privacyredirect.com',
@@ -311,7 +338,7 @@ const INVIDIOUS=['https://inv.nadeko.net','https://invidious.f5.si','https://inv
 const COBALT=['https://api.cobalt.tools/','https://cobalt-api.kwiatekmiki.com/','https://co.wuk.sh/api/json',
   'https://cobalt-api.meowing.de/','https://cobalt-api.ayo.tf/'];
 
-async function pipedFetch(path,timeout=4000){
+async function pipedFetch(path,timeout=3000){
   const ps=PIPED.map(async base=>{
     const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),timeout);
     try{const res=await fetch(base+path,{signal:ctrl.signal});clearTimeout(t);
@@ -320,7 +347,7 @@ async function pipedFetch(path,timeout=4000){
   return await Promise.any(ps);
 }
 
-async function invidiousFetch(path,timeout=4000){
+async function invidiousFetch(path,timeout=3000){
   const ps=INVIDIOUS.map(async base=>{
     const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),timeout);
     try{const res=await fetch(base+path,{signal:ctrl.signal});clearTimeout(t);
@@ -334,7 +361,7 @@ async function cobaltFetch(videoId) {
     for (const ep of COBALT) {
         try {
             const ctrl = new AbortController();
-            const t = setTimeout(() => ctrl.abort(), 5000);
+            const t = setTimeout(() => ctrl.abort(), 3000);
             const res = await fetch(ep, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
@@ -451,7 +478,6 @@ async function playVideo(src,opts={}){
   }
   updateNavButtons();
 
-  // Limpiar datos anteriores inmediatamente
   currentVideoData=null;
   $('videoTitle').textContent='Cargando video...';
   $('videoMeta').textContent='';
@@ -483,7 +509,15 @@ async function playVideo(src,opts={}){
 
 /* ===== YOUTUBE REPRODUCTOR VLC-ROBUSTO (Nativo + Iframe corregido) ===== */
 async function loadYouTube(id,startTime,token){
-  // 1. Obtener título por noembed (Rápido, siempre funciona para actualizar los textos)
+  // 1. Cargar iframe inmediatamente para evitar demora visual
+  destroyPlayer();
+  const embed=$('embedPlayer');
+  embed.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1" 
+    allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:10;"></iframe>`;
+  embed.style.display='block';
+  playerMode='iframe';
+
+  // 2. Obtener título por noembed (Rápido, actualiza la UI al instante)
   fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`)
     .then(r => r.json())
     .then(data => {
@@ -496,10 +530,10 @@ async function loadYouTube(id,startTime,token){
       }
     }).catch(()=>{});
 
-  // 2. Intentar Piped
-  try{
-    const data=await pipedFetch('/streams/'+id,4000);
-    if(token!==loadToken)return;
+  // 3. Intentar cargar en NATIVO en segundo plano (sin anuncios)
+  try {
+    const data=await pipedFetch('/streams/'+id,3000);
+    if(token!==loadToken) return;
     currentVideoData=data;
     setVideoInfoFromPiped(data);
     if(data.uploader) currentCategory = data.uploader;
@@ -507,15 +541,14 @@ async function loadYouTube(id,startTime,token){
       relatedCache[id]=data.relatedStreams.filter(r=>r.type==='stream'&&r.url)
         .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
     }
-    const nativeOk=await tryNativeFromData(id,startTime,data);
-    if(token!==loadToken)return;
-    if(nativeOk) return; // Éxito con Piped
-  }catch(e){ console.warn('Piped falló, intentando Invidious...'); }
+    // Si Piped tiene éxito, sobreescribimos el iframe con el video nativo
+    const nativeOk = await tryNativeFromData(id,startTime,data);
+    if(nativeOk) return; // Salir, el video ya está reproduciéndose sin anuncios
+  } catch(e) { console.warn('Piped falló'); }
 
-  // 3. Intentar Invidious (Con local=true para evitar 403)
-  try{
-    const invRes=await invidiousFetch('/api/v1/videos/'+id, 4000);
-    if(token!==loadToken)return;
+  try {
+    const invRes=await invidiousFetch('/api/v1/videos/'+id, 3000);
+    if(token!==loadToken) return;
     const data=invRes.data;
     currentVideoData=data;
     setVideoInfoFromInvidious(data);
@@ -526,45 +559,12 @@ async function loadYouTube(id,startTime,token){
       let best = streams.find(s => s.itag === '22' || s.qualityLabel === '720p') || streams[0];
       const proxyUrl = `${invRes.base}/latest_version?id=${id}&itag=${best.itag}&local=true`;
       const ok = await tryLoadVideoElement(proxyUrl, startTime);
-      if(ok) return;
+      if(ok) return; // Salir, éxito
     }
-  }catch(e){ console.warn('Invidious también falló. Probando Cobalt API...'); }
-
-  // 4. Intentar Cobalt API (Motor robusto anti-bloqueos)
-  try {
-    const cobaltUrl = await cobaltFetch(id);
-    if(token!==loadToken)return;
-    if(cobaltUrl) {
-      const ok = await tryLoadVideoElement(cobaltUrl, startTime);
-      if(ok) return;
-    }
-  } catch(e) { console.warn('Cobalt falló.'); }
-
-  // 5. Fallback final: YouTube Iframe (Corregido Error 153)
-  if(token!==loadToken)return;
-  destroyPlayer();
-  const embed=$('embedPlayer');
+  } catch(e) { console.warn('Invidious también falló'); }
   
-  // NOTA CRÍTICA: Se elimina 'origin' de la URL y se usa youtube-nocookie.com para evitar Error 153
-  // También añadimos un overlay de seguridad para ocultar el error feo si llega a ocurrir
-  const iframe=document.createElement('iframe');
-  iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
-  iframe.setAttribute('allow','autoplay; fullscreen; encrypted-media');
-  iframe.setAttribute('allowfullscreen','true');
-  iframe.style.cssText='width:100%;height:100%;border:0;position:absolute;top:0;left:0;z-index:10;';
-  
-  embed.innerHTML='';
-  embed.appendChild(iframe);
-  
-  // Overlay invisible para capturar clics si el iframe muestra error y ofrecer el link
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:absolute;bottom:10px;right:10px;z-index:20;';
-  overlay.innerHTML = `<a href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener" class="btn" style="background:rgba(0,0,0,.7);font-size:0.7rem;padding:4px 8px;">Si no reproduce, clic aquí ↗</a>`;
-  embed.appendChild(overlay);
-  
-  embed.style.display='block';
-  playerMode='iframe';
-  updateVolumeMax();updatePauseBtn();
+  // 4. Si llegamos aquí, el iframe de YouTube sigue reproduciendo (con anuncios, pero funciona).
+  // Ya no mostramos el botón feo de "Si no reproduce".
 }
 
 async function tryNativeFromData(videoId,startTime,data){
@@ -588,7 +588,7 @@ async function tryLoadVideoElement(url, startTime) {
     const fin=v=>{if(!done){done=true;resolve(v)}};
     el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
     el.addEventListener('error',()=>fin(false),{once:true});
-    setTimeout(()=>fin(false),5000);
+    setTimeout(()=>fin(false),4000);
   });
   if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
   if(startTime>0)el.currentTime=startTime;
@@ -658,9 +658,7 @@ function playTVByIndex(idx){
 function updateMediaSession(title, artist) {
   if('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: title,
-      artist: artist,
-      album: 'NexusTube',
+      title: title, artist: artist, album: 'NexusTube',
       artwork: [{src: `https://i.ytimg.com/vi/${currentVideoId}/mqdefault.jpg`, sizes: '320x180', type: 'image/jpeg'}]
     });
   }
@@ -829,15 +827,11 @@ async function pickRelated(id){
   
   let pool=(relatedCache[id]||[]).filter(v=>v.id!==id&&!recentlyPlayed.has(v.id));
   if(!pool.length) return null;
-
-  // Filtrar por categoría (artista o título)
   const currentArtist = currentCategory.toLowerCase();
   const sameCategory = pool.filter(v => 
     (v.uploader && v.uploader.toLowerCase().includes(currentArtist)) || 
     (v.title && v.title.toLowerCase().includes(currentArtist))
   );
-  
-  // Preferir la misma categoría, si no hay, elegir del pool general
   const finalPool = sameCategory.length > 0 ? sameCategory : pool;
   return finalPool[Math.floor(Math.random()*finalPool.length)];
 }
@@ -851,13 +845,7 @@ async function handleEnded(){
 function markPlayed(id){if(!id)return;recentlyPlayed.add(id);
   if(recentlyPlayed.size>60){const f=recentlyPlayed.values().next().value;recentlyPlayed.delete(f)}}
 
-$('nativePlayer').addEventListener('ended',()=>{
-  if(document.hidden) {
-    handleEnded(); // Forzar reproducción en segundo plano
-  } else {
-    handleEnded();
-  }
-});
+$('nativePlayer').addEventListener('ended',()=>{handleEnded();});
 $('nativePlayer').addEventListener('play',()=>{isAutoAdvancing=false});
 
 /* ===== Fullscreen ===== */
@@ -950,7 +938,7 @@ async function loadVimeoTrending(){
     const proxy='https://api.allorigins.win/raw?url='+encodeURIComponent('https://vimeo.com/channels/staffpicks/videos/rss');
     const res=await fetch(proxy);const text=await res.text();
     let items=parseVimeoRSS(text);
-    items = items.sort(() => 0.5 - Math.random()); // Aleatorizar
+    items = items.sort(() => 0.5 - Math.random());
     if(items.length){renderResults(items,'vimeo');return}throw new Error('empty');
   }catch(_){renderResults([
       {id:'76979871',title:'The Mountain — Vimeo Staff Picks',uploader:'Vimeo',thumbnail:'',platform:'vimeo'},
@@ -1221,15 +1209,15 @@ function renderLists(){
   $('newListBtn').onclick=()=>{const n=prompt('Nombre de la lista:');if(!n||!n.trim())return;
     const l=getLists();l.push({id:Date.now().toString(36),name:n.trim(),items:[]});setLists(l)};
   
-  // Manejador de Borrar Todo el historial
+  // Manejador de Borrar Todo el historial (Usando Modal Personalizado)
   const clearBtn = $('clearHistoryBtn');
   if(clearBtn) {
     clearBtn.onclick = (e) => {
       e.stopPropagation();
-      if(confirm('¿Deseas eliminar el historial?')) {
+      showConfirm('¿Deseas eliminar el historial?', () => {
         localStorage.setItem('nx_history', '[]');
         renderLists();
-      }
+      });
     };
   }
 
