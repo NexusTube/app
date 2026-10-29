@@ -246,7 +246,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 <button class="exit-fs-btn" id="exitFsBtn" aria-label="Salir de pantalla completa">✕</button>
 <div class="toast" id="toast"></div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
+<!-- YA NO CARGAMOS LA API DE YOUTUBE, SOLO HLS PARA TV -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script>
 /* ===== PWA ===== */
@@ -264,7 +264,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(
 caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{try{if(r.ok&&new URL(e.request.url).origin===location.origin){
-const cl=r.clone();caches.open('nx-v8').then(ca=>ca.put(e.request,cl));}}catch(_){}
+const cl=r.clone();caches.open('nx-v9').then(ca=>ca.put(e.request,cl));}}catch(_){}
 return r;}).catch(()=>caches.match('./'))));});`;
     try{const u=URL.createObjectURL(new Blob([sw],{type:'application/javascript'}));
       navigator.serviceWorker.register(u).catch(()=>{});}catch(_){}
@@ -274,7 +274,7 @@ return r;}).catch(()=>caches.match('./'))));});`;
   ib.addEventListener('click',async()=>{if(!dp)return;dp.prompt();try{await dp.userChoice}catch(_){}dp=null;ib.classList.remove('visible')});
 })();
 
-/* ===== Christmas (25 nov → 6 ene) ===== */
+/* ===== Christmas ===== */
 function isChristmasSeason(){const n=new Date(),m=n.getMonth(),d=n.getDate();
   if(m===10&&d>=25)return true;if(m===11)return true;if(m===0&&d<=6)return true;return false}
 if(isChristmasSeason())document.body.classList.add('christmas');
@@ -331,8 +331,8 @@ async function invidiousFetch(path,timeout=4000){
 }
 
 /* ===== State ===== */
-let player=null,playerMode='none',currentVideoId=null,currentPlatform='youtube',
-    currentSource=null,currentVideoData=null,ytReady=false,pendingIframe=null,
+let playerMode='none',currentVideoId=null,currentPlatform='youtube',
+    currentSource=null,currentVideoData=null,currentCategory='',
     currentVolume=100,loadToken=0,isAutoAdvancing=false,recentlyPlayed=new Set(),
     navHistory=[],navIdx=-1,audioCtx=null,gainNode=null,mediaSourceNode=null,
     connectedVideo=null,audioResumeListenerAttached=false;
@@ -340,9 +340,6 @@ const relatedCache={};
 let hlsInstance=null,availableSubtitles=[],availableAudioTracks=[],
     currentAudioTrackId=null,currentSubtitle=null;
 let tvSeqList=[],tvSeqIdx=-1,tvGlobalCache=null;
-
-window.onYouTubeIframeAPIReady=function(){ytReady=true;
-  if(pendingIframe){const v=pendingIframe;pendingIframe=null;createYTPlayer(v.id,v.startTime||0)}};
 
 function attachAudioResumeListener(){
   if(audioResumeListenerAttached)return;audioResumeListenerAttached=true;
@@ -370,8 +367,6 @@ function applyVolume(v){
     const el=$('nativePlayer');if(el.muted&&currentVolume>0)el.muted=false;
     if(gainNode&&audioCtx&&audioCtx.state==='running'){gainNode.gain.value=currentVolume/100;el.volume=1}
     else el.volume=Math.min(1,currentVolume/100);
-  }else if(playerMode==='iframe'&&player&&player.setVolume){
-    try{player.setVolume(Math.min(100,currentVolume))}catch(_){}
   }
 }
 $('volumeRange').addEventListener('input',e=>applyVolume(parseInt(e.target.value,10)));
@@ -389,8 +384,6 @@ function setupBoost(videoEl){try{
 
 /* ===== Player core ===== */
 function destroyPlayer(){
-  if(player&&typeof player.destroy==='function'){try{player.destroy()}catch(_){}}
-  player=null;
   if(hlsInstance){try{hlsInstance.destroy()}catch(_){}hlsInstance=null}
   const el=$('nativePlayer');el.style.display='none';
   try{el.pause();el.removeAttribute('src');el.load()}catch(_){}
@@ -399,35 +392,6 @@ function destroyPlayer(){
   playerMode='none';
   availableAudioTracks=[];currentAudioTrackId=null;availableSubtitles=[];currentSubtitle=null;
   clearExternalFallback();
-}
-
-function createYTPlayer(id,startTime=0){
-  destroyPlayer();
-  const embed=$('embedPlayer');
-  embed.innerHTML='<div id="ytSlot" style="width:100%;height:100%"></div>';
-  embed.style.display='block';
-  if(!ytReady){pendingIframe={id,startTime};return}
-  try{
-    player=new YT.Player('ytSlot',{
-      videoId:id,width:'100%',height:'100%',
-      playerVars:{autoplay:1,controls:1,modestbranding:1,rel:0,iv_load_policy:3,playsinline:1},
-      events:{
-        onReady:e=>{e.target.setVolume(Math.min(100,currentVolume));if(startTime>0)e.target.seekTo(startTime,true);updatePauseBtn()},
-        onStateChange:e=>{if(e.data===0)handleEnded();updatePauseBtn()},
-        onError:e=>{
-          console.warn('[YT]',e.data);
-          // SI YOUTUBE BLOQUEA EL VIDEO, LO OCULTAMOS Y MOSTRAMOS UN MENSAJE LIMPIO
-          embed.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:1rem;">
-            <h3 style="margin-bottom:.5rem;">Video no disponible aquí</h3>
-            <p style="color:#94a3b8;font-size:.9rem;max-width:80%;">Este video tiene bloqueo de derechos de autor en reproductores web externos.</p>
-            <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="btn" style="margin-top:1rem;">Ver en YouTube ↗</a>
-          </div>`;
-          playerMode='none';
-        }
-      }
-    });
-    playerMode='iframe';updateVolumeMax();
-  }catch(e){console.warn('YT create fail',e)}
 }
 
 function loadEmbedUrl(url,fallbackInfo){
@@ -448,18 +412,6 @@ function loadEmbedUrl(url,fallbackInfo){
 
   if(fallbackInfo&&fallbackInfo.url)showExternalFallback(fallbackInfo.url,fallbackInfo.name);
   else clearExternalFallback();
-
-  if(fallbackInfo&&fallbackInfo.url){
-    setTimeout(()=>{
-      if(!loaded){
-        const overlay=document.createElement('div');
-        overlay.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,15,28,.92);z-index:15;gap:1rem;padding:2rem;text-align:center';
-        overlay.innerHTML=`<p style="color:#94a3b8;font-size:.9rem;max-width:400px">No se pudo incrustar este video en tu dispositivo.</p>
-          <a href="${fallbackInfo.url}" target="_blank" rel="noopener noreferrer" class="btn">Abrir en ${fallbackInfo.name} ↗</a>`;
-        embed.appendChild(overlay);
-      }
-    },6000);
-  }
 }
 
 function showExternalFallback(url,name){
@@ -474,51 +426,15 @@ function showExternalFallback(url,name){
 }
 function clearExternalFallback(){const el=$('externalFallback');if(el)el.remove()}
 
-/* Dailymotion/Vimeo validation */
-async function isDailymotionEmbeddable(id){
-  try{
-    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),4000);
-    const res=await fetch(`https://api.dailymotion.com/video/${id}?fields=embeddable,status,private,title`,{signal:ctrl.signal});
-    clearTimeout(t);
-    if(!res.ok)return null;
-    const d=await res.json();
-    return{embeddable:d.embeddable===true&&d.status==='published'&&!d.private,title:d.title};
-  }catch(_){return null}
-}
-async function isVimeoEmbeddable(id){
-  try{
-    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),4000);
-    const res=await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent('https://vimeo.com/'+id)}`,{signal:ctrl.signal});
-    clearTimeout(t);
-    if(!res.ok)return{embeddable:false};
-    const d=await res.json();
-    return{embeddable:!!(d.html&&d.html.includes('<iframe')),title:d.title};
-  }catch(_){return null}
-}
-
 async function playDailymotion(id,title){
-  const check=await isDailymotionEmbeddable(id);
-  if(check&&!check.embeddable){
-    destroyPlayer();
-    showBasicInfo(title||check.title||'Dailymotion',`dailymotion.com/video/${id}`,'Este video no permite reproducción incrustada.');
-    showExternalFallback(`https://www.dailymotion.com/video/${id}`,'Dailymotion');
-    return;
-  }
   loadEmbedUrl(`https://www.dailymotion.com/embed/video/${id}?autoplay=1&queue-enable=false`,
     {url:`https://www.dailymotion.com/video/${id}`,name:'Dailymotion'});
-  showBasicInfo(title||check?.title||'Dailymotion',`dailymotion.com/video/${id}`,'');
+  showBasicInfo(title||'Dailymotion',`dailymotion.com/video/${id}`,'');
 }
 async function playVimeo(id,title){
-  const check=await isVimeoEmbeddable(id);
-  if(check&&!check.embeddable){
-    destroyPlayer();
-    showBasicInfo(title||check.title||'Vimeo',`vimeo.com/${id}`,'Este video no permite reproducción incrustada.');
-    showExternalFallback(`https://vimeo.com/${id}`,'Vimeo');
-    return;
-  }
   loadEmbedUrl(`https://player.vimeo.com/video/${id}?autoplay=1&title=0&byline=0&portrait=0&dnt=1`,
     {url:`https://vimeo.com/${id}`,name:'Vimeo'});
-  showBasicInfo(title||check?.title||'Vimeo',`vimeo.com/${id}`,'');
+  showBasicInfo(title||'Vimeo',`vimeo.com/${id}`,'');
 }
 
 /* ===== playVideo ===== */
@@ -532,7 +448,7 @@ async function playVideo(src,opts={}){
   }
   updateNavButtons();
 
-  // LIMPIAR TÍTULO INMEDIATAMENTE AL CAMBIAR DE VIDEO
+  // Limpiar datos anteriores inmediatamente
   currentVideoData=null;
   $('videoTitle').textContent='Cargando video...';
   $('videoMeta').textContent='';
@@ -541,6 +457,9 @@ async function playVideo(src,opts={}){
   const token=++loadToken;
   currentVideoId=null;currentSource=src;
   currentPlatform=src.type==='youtube'?'youtube':src.type;
+  
+  if(opts.category) currentCategory = opts.category;
+  else if(src.type==='youtube' && opts.title) currentCategory = opts.title;
 
   try{
     if(src.type==='youtube'){currentVideoId=src.id;markPlayed(src.id);
@@ -563,66 +482,66 @@ async function playVideo(src,opts={}){
   if(currentVideoId)setTimeout(()=>pushHistory({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader()}),800);
 }
 
-/* ===== YOUTUBE REPRODUCTOR (Nuevo Flujo Corregido) ===== */
+/* ===== YOUTUBE REPRODUCTOR (100% NATIVO, SIN IFRAME) ===== */
 async function loadYouTube(id,startTime,token){
-  // 1. Intentar obtener datos y stream nativo con Piped
+  // 1. Obtener título por noembed (Rápido, siempre funciona)
+  fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`)
+    .then(r => r.json())
+    .then(data => {
+      if(token===loadToken && data.title) {
+        currentCategory = data.author_name || '';
+        $('videoTitle').textContent = data.title;
+        $('videoMeta').textContent = data.author_name || '';
+        $('videoInfo').classList.add('visible');
+        updateMediaSession(data.title, data.author_name);
+      }
+    }).catch(()=>{});
+
+  // 2. Intentar Piped
   try{
     const data=await pipedFetch('/streams/'+id,4000);
     if(token!==loadToken)return;
-    
     currentVideoData=data;
-    setVideoInfoFromPiped(data); // ACTUALIZA TÍTULO AQUÍ
-    
+    setVideoInfoFromPiped(data);
+    if(data.uploader) currentCategory = data.uploader;
     if(data.relatedStreams){
       relatedCache[id]=data.relatedStreams.filter(r=>r.type==='stream'&&r.url)
         .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
     }
-    
     const nativeOk=await tryNativeFromData(id,startTime,data);
     if(token!==loadToken)return;
-    if(nativeOk){
-      $('embedPlayer').style.display='none';$('nativePlayer').style.display='block';
-      playerMode='native';updateVolumeMax();
-      try{await $('nativePlayer').play()}catch(e){
-        try{$('nativePlayer').muted=true;await $('nativePlayer').play();toast('🔇 Toca para sonido')}catch(_){}
-      }
-      applyVolume(currentVolume);updatePauseBtn();
-      return; // ÉXITO CON PIPED
-    }
-  }catch(e){ console.warn('Piped falló, probando Invidious...'); }
+    if(nativeOk) return; // Éxito con Piped
+  }catch(e){ console.warn('Piped falló, intentando Invidious...'); }
 
-  // 2. Si Piped falla, intentar con Invidious
+  // 3. Intentar Invidious (Con local=true para evitar 403)
   try{
     const invRes=await invidiousFetch('/api/v1/videos/'+id, 4000);
     if(token!==loadToken)return;
-    
     const data=invRes.data;
     currentVideoData=data;
-    setVideoInfoFromInvidious(data); // ACTUALIZA TÍTULO AQUÍ TAMBIÉN
+    setVideoInfoFromInvidious(data);
+    if(data.author) currentCategory = data.author;
     
-    const nativeOk=await tryNativeFromInvidious(id,startTime,data);
-    if(token!==loadToken)return;
-    if(nativeOk){
-      $('embedPlayer').style.display='none';$('nativePlayer').style.display='block';
-      playerMode='native';updateVolumeMax();
-      try{await $('nativePlayer').play()}catch(e){
-        try{$('nativePlayer').muted=true;await $('nativePlayer').play();toast('🔇 Toca para sonido')}catch(_){}
-      }
-      applyVolume(currentVolume);updatePauseBtn();
-      return; // ÉXITO CON INVIDIOUS
+    // local=true hace que Invidious actúe como proxy de video
+    const streams = data.formatStreams || [];
+    if(streams.length > 0) {
+      // Priorizar el stream 720p (itag 22 o similar)
+      let best = streams.find(s => s.itag === '22' || s.qualityLabel === '720p') || streams[0];
+      const proxyUrl = `${invRes.base}/latest_version?id=${id}&itag=${best.itag}&local=true`;
+      
+      const ok = await tryLoadVideoElement(proxyUrl, startTime);
+      if(ok) return;
     }
-  }catch(e){ console.warn('Invidious también falló. Usando reproductor oficial.'); }
+  }catch(e){ console.warn('Invidious también falló.'); }
 
-  // 3. Fallback final: YouTube Iframe (con manejo de errores)
+  // 4. Fallback final: Mostrar mensaje de error limpio
   if(token!==loadToken)return;
-  createYTPlayer(id,startTime);
-  
-  // Intentar obtener el título aunque sea por búsqueda rápida para que no quede "Cargando..."
-  if(!currentVideoData || !currentVideoData.title) {
-    pipedFetch('/streams/'+id, 2000).then(d => {
-      if(d && d.title && token===loadToken) setVideoInfoFromPiped(d);
-    }).catch(()=>{});
-  }
+  $('embedPlayer').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:1rem;background:#000;">
+    <h3 style="margin-bottom:.5rem;">Video restringido</h3>
+    <p style="color:#94a3b8;font-size:.9rem;max-width:80%;">Este video no se puede reproducir por restricciones del autor.</p>
+    <a href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener" class="btn" style="margin-top:1rem;">Abrir en YouTube ↗</a>
+  </div>`;
+  $('embedPlayer').style.display='block';
 }
 
 async function tryNativeFromData(videoId,startTime,data){
@@ -632,32 +551,37 @@ async function tryNativeFromData(videoId,startTime,data){
     if(!streams.length)return false;
     streams.sort((a,b)=>{const a720=Math.abs((a.height||0)-720),b720=Math.abs((b.height||0)-720);
       if(a720!==b720)return a720-b720;return (b.height||0)-(a.height||0)});
-    const chosen=streams[0];const el=$('nativePlayer');
-    el.crossOrigin='anonymous';el.src=chosen.url;
-    const ok=await new Promise(resolve=>{let done=false;const fin=v=>{if(!done){done=true;resolve(v)}};
-      el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
-      el.addEventListener('error',()=>fin(false),{once:true});
-      setTimeout(()=>fin(false),4000)});
-    if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
-    if(startTime>0)el.currentTime=startTime;
-    setupBoost(el);detectNativeAudioTracks(el);return true;
+    const chosen=streams[0];
+    return await tryLoadVideoElement(chosen.url, startTime);
   }catch(_){return false}
 }
 
-async function tryNativeFromInvidious(videoId,startTime,data){
-  try{
-    const streams=(data.formatStreams||[]);
-    if(!streams.length)return false;
-    const chosen=streams[0];const el=$('nativePlayer');
-    el.crossOrigin='anonymous';el.src=chosen.url;
-    const ok=await new Promise(resolve=>{let done=false;const fin=v=>{if(!done){done=true;resolve(v)}};
-      el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
-      el.addEventListener('error',()=>fin(false),{once:true});
-      setTimeout(()=>fin(false),4000)});
-    if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
-    if(startTime>0)el.currentTime=startTime;
-    setupBoost(el);detectNativeAudioTracks(el);return true;
-  }catch(_){return false}
+async function tryLoadVideoElement(url, startTime) {
+  const el=$('nativePlayer');
+  el.crossOrigin='anonymous';
+  el.src=url;
+  const ok=await new Promise(resolve=>{
+    let done=false;
+    const fin=v=>{if(!done){done=true;resolve(v)}};
+    el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
+    el.addEventListener('error',()=>fin(false),{once:true});
+    setTimeout(()=>fin(false),5000);
+  });
+  if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
+  if(startTime>0)el.currentTime=startTime;
+  setupBoost(el);
+  detectNativeAudioTracks(el);
+  
+  $('embedPlayer').style.display='none';
+  el.style.display='block';
+  playerMode='native';
+  updateVolumeMax();
+  try{await el.play()}catch(e){
+    try{el.muted=true;await el.play();toast('🔇 Toca para sonido')}catch(_){}
+  }
+  applyVolume(currentVolume);
+  updatePauseBtn();
+  return true;
 }
 
 async function loadDirect(url,startTime){
@@ -707,18 +631,31 @@ function playTVByIndex(idx){
   playVideo({type:'tv',channel:ch,idx},{title:ch.name});
 }
 
-/* ===== Info ===== */
+/* ===== Info & MediaSession ===== */
+function updateMediaSession(title, artist) {
+  if('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title,
+      artist: artist,
+      album: 'NexusTube',
+      artwork: [{src: `https://i.ytimg.com/vi/${currentVideoId}/mqdefault.jpg`, sizes: '320x180', type: 'image/jpeg'}]
+    });
+  }
+}
+
 function setVideoInfoFromPiped(data){
   if(!data || !data.title) return;
   $('videoTitle').textContent=data.title||'';
   const meta=[];if(data.uploader)meta.push(data.uploader);
   if(data.views)meta.push(parseInt(data.views).toLocaleString()+' vistas');
   $('videoMeta').textContent=meta.join(' · ');
-  const desc=data.description||'';$('videoDesc').textContent=desc;
+  let desc=data.description||'';desc = desc.replace(/<br>/g, '\n').replace(/<[^>]*>?/gm, '');
+  $('videoDesc').textContent=desc;
   $('videoDesc').classList.remove('expanded');$('toggleDesc').textContent='Mostrar más';
   $('toggleDesc').style.display=desc.length>200?'block':'none';
   availableSubtitles=(data.subtitles||[]).map(s=>({code:s.code,name:s.name||s.code,url:s.url,auto:s.autoGenerated||false,source:'yt'}));
   $('videoInfo').classList.add('visible');
+  updateMediaSession(data.title, data.uploader || '');
 }
 function setVideoInfoFromInvidious(data){
   if(!data || !data.title) return;
@@ -726,11 +663,13 @@ function setVideoInfoFromInvidious(data){
   const meta=[];if(data.author)meta.push(data.author);
   if(data.viewCount)meta.push(parseInt(data.viewCount).toLocaleString()+' vistas');
   $('videoMeta').textContent=meta.join(' · ');
-  const desc=data.description||'';$('videoDesc').textContent=desc;
+  const desc=data.description||'';
+  $('videoDesc').textContent=desc;
   $('videoDesc').classList.remove('expanded');$('toggleDesc').textContent='Mostrar más';
   $('toggleDesc').style.display=desc.length>200?'block':'none';
   availableSubtitles=(data.captions||[]).map(c=>({code:c.language_code,name:c.label||c.language_code,url:c.url,auto:c.auto_generated||false,source:'yt'}));
   $('videoInfo').classList.add('visible');
+  updateMediaSession(data.title, data.author || '');
 }
 function showBasicInfo(t,m,d){
   $('videoTitle').textContent=t||'';$('videoMeta').textContent=m||'';$('videoDesc').textContent=d||'';
@@ -786,10 +725,6 @@ $('audioBtn').addEventListener('click',(e)=>{e.stopPropagation();
 
 $('subsBtn').addEventListener('click',(e)=>{e.stopPropagation();
   if(hlsInstance)detectHLSSubs();
-  if(playerMode==='iframe'&&player&&player.getOption){
-    try{const tracks=player.getOption('captions','tracklist')||[];
-      tracks.forEach(t=>{if(!availableSubtitles.find(s=>s.code===t.languageCode))
-        availableSubtitles.push({code:t.languageCode,name:t.displayName||t.languageName||t.languageCode,auto:false,source:'yt-iframe'})})}catch(_){}}
   document.querySelectorAll('.ctx-menu').forEach(m=>m.remove());
   const menu=document.createElement('div');menu.className='ctx-menu';
   const rect=e.currentTarget.getBoundingClientRect();
@@ -815,10 +750,6 @@ function applySubtitle(code,src){
     else{const sub=availableSubtitles.find(s=>s.code===code&&s.source==='hls');
       if(sub){try{hlsInstance.subtitleTrack=sub.idx;hlsInstance.subtitleDisplay=true;toast('💬 '+sub.name);return}catch(_){}}}
   }
-  if(playerMode==='iframe'&&player&&player.setOption){
-    try{if(!code){player.unloadModule('captions')}
-      else{player.loadModule('captions');player.setOption('captions','track',{languageCode:code});player.setOption('captions','reload',true)}
-      toast(code?`💬 Subtítulos: ${code}`:'Subtítulos desactivados');return}catch(_){}}
   const el=$('nativePlayer');el.querySelectorAll('track').forEach(t=>t.remove());
   if(!code){toast('Subtítulos desactivados');return}
   const sub=availableSubtitles.find(s=>s.code===code);
@@ -832,19 +763,13 @@ function applySubtitle(code,src){
 /* ===== Pause/Repeat ===== */
 function updatePauseBtn(){const btn=$('pauseBtn');if(!btn)return;let playing=false;
   if(playerMode==='native')playing=!$('nativePlayer').paused;
-  else if(playerMode==='iframe'&&player&&player.getPlayerState){
-    try{playing=player.getPlayerState()===1}catch(_){}}
   btn.textContent=playing?'⏸':'▶'}
 $('pauseBtn').addEventListener('click',()=>{
   if(playerMode==='native'){const el=$('nativePlayer');
     if(el.paused)el.play().catch(()=>{});else el.pause();updatePauseBtn()}
-  else if(playerMode==='iframe'&&player){
-    try{const s=player.getPlayerState();if(s===1)player.pauseVideo();else player.playVideo()}catch(_){}
-    setTimeout(updatePauseBtn,200)}
   else if(currentSource)playVideo(currentSource,{noNav:true})});
 $('repeatBtn').addEventListener('click',()=>{
   if(playerMode==='native'){const el=$('nativePlayer');el.currentTime=0;el.play().catch(()=>{});toast('🔄 Reiniciado')}
-  else if(playerMode==='iframe'&&player&&player.seekTo){try{player.seekTo(0,true);player.playVideo();toast('🔄 Reiniciado')}catch(_){}}
   else if(currentSource)playVideo(currentSource,{noNav:true})});
 $('nativePlayer').addEventListener('play',updatePauseBtn);
 $('nativePlayer').addEventListener('pause',updatePauseBtn);
@@ -872,22 +797,44 @@ $('likeBtn').addEventListener('click',()=>{
   else{favs.push({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader(),ts:Date.now()});
     setFavs(favs);$('likeBtn').textContent='❤️';toast('❤️ Añadido')}});
 
-/* ===== Auto-next ===== */
+/* ===== Auto-next Inteligente (Categoría) ===== */
 async function pickRelated(id){
   if(!relatedCache[id]){try{const data=await pipedFetch('/streams/'+id,4000);
     relatedCache[id]=(data.relatedStreams||[]).filter(r=>r.type==='stream'&&r.url)
       .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
   }catch(_){relatedCache[id]=[]}}
-  const pool=(relatedCache[id]||[]).filter(v=>v.id!==id&&!recentlyPlayed.has(v.id));
-  if(!pool.length)return null;return pool[Math.floor(Math.random()*pool.length)]}
+  
+  let pool=(relatedCache[id]||[]).filter(v=>v.id!==id&&!recentlyPlayed.has(v.id));
+  if(!pool.length) return null;
+
+  // Filtrar por categoría (artista o título)
+  const currentArtist = currentCategory.toLowerCase();
+  const sameCategory = pool.filter(v => 
+    (v.uploader && v.uploader.toLowerCase().includes(currentArtist)) || 
+    (v.title && v.title.toLowerCase().includes(currentArtist))
+  );
+  
+  // Preferir la misma categoría, si no hay, elegir del pool general
+  const finalPool = sameCategory.length > 0 ? sameCategory : pool;
+  return finalPool[Math.floor(Math.random()*finalPool.length)];
+}
 async function handleEnded(){
   if(isAutoAdvancing)return;isAutoAdvancing=true;
   try{if(!currentVideoId)return;const next=await pickRelated(currentVideoId);
-    if(next){toast(`▶️ ${next.title.slice(0,50)}`,2500);await playVideo({type:'youtube',id:next.id},{title:next.title})}
+    if(next){toast(`▶️ ${next.title.slice(0,50)}`,2500);
+      const keepCat = next.uploader === currentCategory ? currentCategory : next.uploader;
+      await playVideo({type:'youtube',id:next.id},{title:next.title, category:keepCat})}
   }catch(e){console.warn(e)}finally{isAutoAdvancing=false}}
 function markPlayed(id){if(!id)return;recentlyPlayed.add(id);
   if(recentlyPlayed.size>60){const f=recentlyPlayed.values().next().value;recentlyPlayed.delete(f)}}
-$('nativePlayer').addEventListener('ended',handleEnded);
+
+$('nativePlayer').addEventListener('ended',()=>{
+  if(document.hidden) {
+    handleEnded(); // Forzar reproducción en segundo plano
+  } else {
+    handleEnded();
+  }
+});
 $('nativePlayer').addEventListener('play',()=>{isAutoAdvancing=false});
 
 /* ===== Fullscreen ===== */
@@ -1182,7 +1129,7 @@ function renderResults(items,type){
       else if(plat==='vimeo')playVideo({type:'vimeo',id:item.id},{title:item.title});
       else if(plat==='peertube')playVideo({type:'iframe',url:item.url},{title:item.title});
       else if(plat==='archive')playVideo({type:'archive',id:item.id},{title:item.title});
-      else playVideo({type:'youtube',id:item.id},{title:item.title});
+      else playVideo({type:'youtube',id:item.id},{title:item.title, category:item.uploader});
       window.scrollTo({top:0,behavior:'smooth'});
     });
     list.appendChild(div);
@@ -1191,7 +1138,7 @@ function renderResults(items,type){
 }
 function highlightActive(id){document.querySelectorAll('.video-item').forEach(el=>el.classList.toggle('active',el.dataset.vid===id))}
 
-/* ===== Lists ===== */
+/* ===== Lists & History ===== */
 function getLists(){try{return JSON.parse(localStorage.getItem('nx_lists')||'[]')}catch(_){return[]}}
 function setLists(l){localStorage.setItem('nx_lists',JSON.stringify(l));renderLists()}
 function getHistory(){try{return JSON.parse(localStorage.getItem('nx_history')||'[]')}catch(_){return[]}}
@@ -1218,13 +1165,21 @@ function renderLists(){
         <span class="title">${esc(v.title||v.id)}</span>
         <div class="ctrl"><button data-act="remove">✕</button></div></div>`).join('')}
     </div></div></div>`;
-  html+=`<div class="pl-group"><div class="pl-header"><span class="name">🕒 Historial</span><span class="count">${history.length}</span></div>
+  
+  // HISTORIAL CON BOTÓN DE BORRAR TODO
+  html+=`<div class="pl-group" id="historyGroup">
+    <div class="pl-header">
+      <span class="name">🕒 Historial</span>
+      <span class="count">${history.length}</span>
+      <button id="clearHistoryBtn" style="background:rgba(239,68,68,.2); border:none; color:#ef4444; padding:2px 8px; border-radius:4px; cursor:pointer; font-size:0.7rem;">Borrar todo</button>
+    </div>
     <div class="pl-items"><div class="pl-items-inner">
     ${history.length===0?'<div class="dl-empty">Sin historial</div>':
       history.map(v=>`<div class="pl-item" data-vid="${esc(v.id)}" data-src="history">
         <span class="title">${esc(v.title||v.id)}</span>
         <div class="ctrl"><button data-act="remove">✕</button></div></div>`).join('')}
     </div></div></div>`;
+
   lists.forEach(list=>{
     html+=`<div class="pl-group" data-key="list-${esc(list.id)}">
       <div class="pl-header" data-listid="${esc(list.id)}">
@@ -1239,8 +1194,23 @@ function renderLists(){
       </div></div></div>`;
   });
   el.innerHTML=html;
+  
   $('newListBtn').onclick=()=>{const n=prompt('Nombre de la lista:');if(!n||!n.trim())return;
     const l=getLists();l.push({id:Date.now().toString(36),name:n.trim(),items:[]});setLists(l)};
+  
+  // Manejador de Borrar Todo el historial
+  const clearBtn = $('clearHistoryBtn');
+  if(clearBtn) {
+    clearBtn.onclick = (e) => {
+      e.stopPropagation();
+      if(confirm('¿Borrar todo el historial de reproducción?')) {
+        localStorage.setItem('nx_history', '[]');
+        renderLists();
+        toast('Historial borrado');
+      }
+    };
+  }
+
   el.querySelectorAll('.pl-header').forEach(h=>h.addEventListener('click',e=>{
     if(e.target.closest('button'))return;h.closest('.pl-group').classList.toggle('expanded')}));
   el.querySelectorAll('[data-act]').forEach(btn=>btn.addEventListener('click',e=>{
