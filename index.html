@@ -179,7 +179,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(6,182,212,.3);border-radius:4px}
 
-/* MODAL PERSONALIZADO (Para evitar el "nexustube.github.io dice") */
+/* MODAL PERSONALIZADO */
 .custom-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
 .custom-modal.open{display:flex;}
 .custom-modal-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.5rem;max-width:400px;width:90%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.8);}
@@ -252,7 +252,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 <button class="exit-fs-btn" id="exitFsBtn" aria-label="Salir de pantalla completa">✕</button>
 <div class="toast" id="toast"></div>
 
-<!-- Modal Personalizado -->
 <div class="custom-modal" id="confirmModal">
   <div class="custom-modal-box">
     <p id="confirmMsg">¿Deseas eliminar el historial?</p>
@@ -280,7 +279,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(
 caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{try{if(r.ok&&new URL(e.request.url).origin===location.origin){
-const cl=r.clone();caches.open('nx-v13').then(ca=>ca.put(e.request,cl));}}catch(_){}
+const cl=r.clone();caches.open('nx-v14').then(ca=>ca.put(e.request,cl));}}catch(_){}
 return r;}).catch(()=>caches.match('./'))));});`;
     try{const u=URL.createObjectURL(new Blob([sw],{type:'application/javascript'}));
       navigator.serviceWorker.register(u).catch(()=>{});}catch(_){}
@@ -321,7 +320,6 @@ function detectSource(input){if(!input)return null;const s=input.trim();
   if(/^[a-zA-Z0-9_-]{11}$/.test(s))return{type:'youtube',id:s};
   return null}
 
-/* Modal Personalizado */
 function showConfirm(msg, callback) {
   $('confirmMsg').textContent = msg;
   $('confirmModal').classList.add('open');
@@ -387,6 +385,7 @@ const relatedCache={};
 let hlsInstance=null,availableSubtitles=[],availableAudioTracks=[],
     currentAudioTrackId=null,currentSubtitle=null;
 let tvSeqList=[],tvSeqIdx=-1,tvGlobalCache=null;
+let skipCounter=0; // Para evitar bucles infinitos de error
 
 function attachAudioResumeListener(){
   if(audioResumeListenerAttached)return;audioResumeListenerAttached=true;
@@ -482,6 +481,7 @@ async function playVideo(src,opts={}){
   $('videoTitle').textContent='Cargando video...';
   $('videoMeta').textContent='';
   $('videoDesc').textContent='';
+  skipCounter = 0; // Reiniciar contador de saltos
 
   const token=++loadToken;
   currentVideoId=null;currentSource=src;
@@ -507,20 +507,11 @@ async function playVideo(src,opts={}){
   if(currentVideoId)setTimeout(()=>pushHistory({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader()}),800);
 }
 
-/* ===== YOUTUBE REPRODUCTOR VLC-ROBUSTO (Nativo + Iframe corregido) ===== */
+/* ===== YOUTUBE REPRODUCTOR (Nativo + Fallback Inteligente) ===== */
 async function loadYouTube(id,startTime,token){
-  // 1. Cargar iframe inmediatamente para evitar demora visual
-  destroyPlayer();
-  const embed=$('embedPlayer');
-  embed.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1" 
-    allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:10;"></iframe>`;
-  embed.style.display='block';
-  playerMode='iframe';
-
-  // 2. Obtener título por noembed (Rápido, actualiza la UI al instante)
+  // 1. Obtener título rápido
   fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`)
-    .then(r => r.json())
-    .then(data => {
+    .then(r => r.json()).then(data => {
       if(token===loadToken && data.title) {
         currentCategory = data.author_name || '';
         $('videoTitle').textContent = data.title;
@@ -530,7 +521,7 @@ async function loadYouTube(id,startTime,token){
       }
     }).catch(()=>{});
 
-  // 3. Intentar cargar en NATIVO en segundo plano (sin anuncios)
+  // 2. Intentar cargar en NATIVO (Piped / Invidious / Cobalt)
   try {
     const data=await pipedFetch('/streams/'+id,3000);
     if(token!==loadToken) return;
@@ -541,9 +532,8 @@ async function loadYouTube(id,startTime,token){
       relatedCache[id]=data.relatedStreams.filter(r=>r.type==='stream'&&r.url)
         .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
     }
-    // Si Piped tiene éxito, sobreescribimos el iframe con el video nativo
     const nativeOk = await tryNativeFromData(id,startTime,data);
-    if(nativeOk) return; // Salir, el video ya está reproduciéndose sin anuncios
+    if(nativeOk) return;
   } catch(e) { console.warn('Piped falló'); }
 
   try {
@@ -559,12 +549,26 @@ async function loadYouTube(id,startTime,token){
       let best = streams.find(s => s.itag === '22' || s.qualityLabel === '720p') || streams[0];
       const proxyUrl = `${invRes.base}/latest_version?id=${id}&itag=${best.itag}&local=true`;
       const ok = await tryLoadVideoElement(proxyUrl, startTime);
-      if(ok) return; // Salir, éxito
+      if(ok) return;
     }
   } catch(e) { console.warn('Invidious también falló'); }
   
-  // 4. Si llegamos aquí, el iframe de YouTube sigue reproduciendo (con anuncios, pero funciona).
-  // Ya no mostramos el botón feo de "Si no reproduce".
+  // 3. Si llegamos aquí, el video está muy restringido. 
+  // En lugar de mostrar iframe con error, saltamos al siguiente automáticamente.
+  console.warn('Video bloqueado o no disponible. Saltando...');
+  toast('⚠️ Video no disponible, saltando al siguiente...');
+  
+  if(skipCounter < 3) {
+      skipCounter++;
+      // Esperar medio segundo y buscar el siguiente
+      setTimeout(() => handleEnded(), 500);
+  } else {
+      // Si ya saltó 3 veces seguidas, mostrar un mensaje de error
+      $('videoTitle').textContent = 'Error de reproducción';
+      $('videoMeta').textContent = 'Los videos no se pueden reproducir por bloqueos de derechos de autor.';
+      $('videoDesc').textContent = 'Intenta buscar otro artista o género.';
+      skipCounter = 0;
+  }
 }
 
 async function tryNativeFromData(videoId,startTime,data){
@@ -588,7 +592,7 @@ async function tryLoadVideoElement(url, startTime) {
     const fin=v=>{if(!done){done=true;resolve(v)}};
     el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
     el.addEventListener('error',()=>fin(false),{once:true});
-    setTimeout(()=>fin(false),4000);
+    setTimeout(()=>fin(false),3000);
   });
   if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
   if(startTime>0)el.currentTime=startTime;
@@ -1177,7 +1181,6 @@ function renderLists(){
         <div class="ctrl"><button data-act="remove">✕</button></div></div>`).join('')}
     </div></div></div>`;
   
-  // HISTORIAL CON BOTÓN DE BORRAR TODO
   html+=`<div class="pl-group" id="historyGroup">
     <div class="pl-header">
       <span class="name">🕒 Historial</span>
@@ -1209,7 +1212,6 @@ function renderLists(){
   $('newListBtn').onclick=()=>{const n=prompt('Nombre de la lista:');if(!n||!n.trim())return;
     const l=getLists();l.push({id:Date.now().toString(36),name:n.trim(),items:[]});setLists(l)};
   
-  // Manejador de Borrar Todo el historial (Usando Modal Personalizado)
   const clearBtn = $('clearHistoryBtn');
   if(clearBtn) {
     clearBtn.onclick = (e) => {
