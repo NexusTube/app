@@ -66,44 +66,14 @@ main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:2rem;
   border:1px solid var(--border);box-shadow:0 10px 30px rgba(0,0,0,.8),0 0 20px rgba(6,182,212,.1);
   touch-action:pan-y}
 
-.video-wrapper:fullscreen,
-.video-wrapper:-webkit-full-screen,
-.video-wrapper:-moz-full-screen{
-  padding-top:0 !important;
-  width:100vw !important;height:100vh !important;
-  max-width:100vw !important;max-height:100vh !important;
-  border-radius:0 !important;border:none !important;
-  background:#000 !important;
-  overflow:hidden !important;
+/* VIDEO EN FULLSCREEN NATIVO - El navegador se encarga del escalado */
+#nativePlayer:fullscreen {
+  width: 100vw !important; height: 100vh !important;
+  background: #000 !important; object-fit: contain !important;
 }
-
-.video-wrapper:fullscreen #nativePlayer,
-.video-wrapper:-webkit-full-screen #nativePlayer{
-  position:absolute !important;
-  top:0 !important;left:0 !important;
-  width:100% !important;height:100% !important;
-  max-width:100vw !important;max-height:100vh !important;
-  filter:none !important;-webkit-filter:none !important;
-  background:#000 !important;
-  display:block !important;
-  object-fit:contain !important;
-}
-
-.video-wrapper:fullscreen #embedPlayer,
-.video-wrapper:-webkit-full-screen #embedPlayer{
-  position:absolute !important;
-  top:0 !important;left:0 !important;
-  width:100% !important;height:100% !important;
-  filter:none !important;
-  display:block !important;
-}
-
-.video-wrapper:fullscreen #embedPlayer > div,
-.video-wrapper:fullscreen #embedPlayer iframe,
-.video-wrapper:-webkit-full-screen #embedPlayer > div,
-.video-wrapper:-webkit-full-screen #embedPlayer iframe{
-  width:100% !important;height:100% !important;
-  max-width:100vw !important;max-height:100vh !important;
+#nativePlayer:-webkit-full-screen {
+  width: 100vw !important; height: 100vh !important;
+  background: #000 !important; object-fit: contain !important;
 }
 
 .video-wrapper.swiping{touch-action:none}
@@ -124,15 +94,6 @@ main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:2rem;
 .gesture-text{font-size:.8rem;font-weight:700;margin-bottom:.4rem}
 .gesture-bar{width:8px;height:100px;background:rgba(255,255,255,.25);border-radius:4px;position:relative;overflow:hidden}
 .gesture-fill{position:absolute;bottom:0;left:0;width:100%;background:var(--accent);height:50%;transition:height .1s}
-
-.exit-fs-btn{position:absolute;top:12px;right:12px;z-index:60;width:32px;height:32px;
-  background:transparent;color:#fff;border:none;
-  font-size:26px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;
-  font-weight:300;user-select:none;-webkit-tap-highlight-color:transparent;
-  text-shadow:0 2px 6px rgba(0,0,0,1),0 0 12px rgba(0,0,0,.9);
-  filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))}
-.exit-fs-btn.visible{display:flex !important}
-.exit-fs-btn:active{transform:scale(.9)}
 
 .controls-bar{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--border);
   padding:.5rem .75rem;border-radius:12px;display:flex;flex-direction:column;gap:.4rem;min-width:0}
@@ -392,8 +353,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <div class="gesture-text" id="brightnessText">100%</div>
         <div class="gesture-bar"><div class="gesture-fill" id="brightnessFill" style="height:75%"></div></div>
       </div>
-      
-      <button class="exit-fs-btn" id="exitFsBtn" aria-label="Salir de pantalla completa">✕</button>
     </div>
     
     <div class="controls-bar">
@@ -412,7 +371,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <button class="icon-btn" id="audioBtn" title="Audio">🎧</button>
         <button class="icon-btn" id="likeBtn" title="Favorito">🤍</button>
         <button class="icon-btn" id="subsBtn" title="Subtítulos">💬</button>
-        <button class="icon-btn" id="fsBtn" title="Pantalla completa">⛶</button>
         <button class="icon-btn" id="dlBtn" title="Descargar">⬇️</button>
       </div>
     </div>
@@ -489,6 +447,8 @@ function fmtDur(sec){if(sec===undefined||sec===null||sec<0||isNaN(sec))return ''
   return m+':'+String(s).padStart(2,'0')}
 function detectSource(input){if(!input)return null;const s=input.trim();
   if(/\.(mp4|webm|ogg|ogv|mov|m4v|m3u8|mpd|ts|flv|mkv)(\?|#|$)/i.test(s))return{type:'direct',url:s};
+  if(/tiktok\.com\/@[^/]+\/video\/(\d+)/.test(s)) return {type:'tiktok', url:s};
+  if(/vm\.tiktok\.com\/[a-zA-Z0-9]+/.test(s)) return {type:'tiktok', url:s};
   const yt=parseVideoId(s);if(yt)return{type:'youtube',id:yt};
   const vm=s.match(/vimeo\.com\/(?:video\/)?(\d+)/);if(vm)return{type:'vimeo',id:vm[1]};
   const dm=s.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/);if(dm)return{type:'dailymotion',id:dm[1]};
@@ -502,15 +462,15 @@ const PIPED=['https://pipedapi.kavin.rocks','https://pipedapi.adminforge.de','ht
 const INVIDIOUS=['https://inv.nadeko.net','https://invidious.f5.si','https://invidious.privacyredirect.com','https://invidious.jing.rocks','https://yewtu.be'];
 const COBALT_ENDPOINTS=['https://api.cobalt.tools','https://cobalt-api.kwiatekmiki.com','https://cobalt-api.meowing.de'];
 
-async function pipedFetch(path,timeout=5000){const ps=PIPED.map(async base=>{
+async function pipedFetch(path,timeout=8000){const ps=PIPED.map(async base=>{
   const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),timeout);
   try{const res=await fetch(base+path,{signal:ctrl.signal});clearTimeout(t);if(!res.ok)throw 0;return await res.json()}catch(_){clearTimeout(t);throw 0}});
   return await Promise.any(ps)}
-async function invidiousFetch(path,timeout=5000){const ps=INVIDIOUS.map(async base=>{
+async function invidiousFetch(path,timeout=8000){const ps=INVIDIOUS.map(async base=>{
   const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),timeout);
   try{const res=await fetch(base+path,{signal:ctrl.signal});clearTimeout(t);if(!res.ok)throw 0;return{data:await res.json(),base}}catch(_){clearTimeout(t);throw 0}});
   return await Promise.any(ps)}
-async function cobaltFetch(videoId,timeout=5000){
+async function cobaltFetch(videoId,timeout=8000){
   const ps=COBALT_ENDPOINTS.map(async base=>{
     const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),timeout);
     try{
@@ -741,8 +701,6 @@ async function playVideo(src,opts={}){
   if(typeof src==='string')src=detectSource(src);
   if(!src){toast('❌ Fuente no reconocida');return}
   
-  const wasFs = !!document.fullscreenElement;
-  
   destroyPlayer();
   
   if(!opts.noNav){
@@ -759,24 +717,46 @@ async function playVideo(src,opts={}){
   currentPlatform=src.type==='youtube'?'youtube':src.type;
   if(opts.category)currentCategory=opts.category;
   else if(src.type==='youtube'&&opts.title)currentCategory=opts.title;
+  
   try{
     if(src.type==='youtube'){currentVideoId=src.id;markPlayed(src.id);await loadYouTube(src.id,opts.startTime||0,token)}
+    else if(src.type==='tiktok'){await loadTikTok(src.url)}
     else if(src.type==='direct'){await loadDirect(src.url,opts.startTime||0);showBasicInfo('Video','','')}
     else if(src.type==='vimeo'){loadEmbedUrl(`https://player.vimeo.com/video/${src.id}?autoplay=1&title=0&byline=0&portrait=0&dnt=1`);showBasicInfo(opts.title||'Vimeo',`vimeo.com/${src.id}`,'')}
     else if(src.type==='dailymotion'){loadEmbedUrl(`https://www.dailymotion.com/embed/video/${src.id}?autoplay=1&queue-enable=false`);showBasicInfo(opts.title||'Dailymotion',`dailymotion.com/video/${src.id}`,'')}
     else if(src.type==='iframe'){loadEmbedUrl(src.url);showBasicInfo('Video externo',src.url,'')}
     else if(src.type==='tv'){await loadTV(src.channel,src.idx);showBasicInfo(src.channel.name,'',src.channel.group||'')}
   }catch(e){console.warn(e);toast('⚠️ Error al cargar')}
+  
   updateLikeBtn();updateVolumeMax();updatePauseBtn();
   if(currentVideoId)setTimeout(()=>pushHistory({id:currentVideoId,title:getCurrentTitle(),uploader:getCurrentUploader()}),800);
   applyBrightness(currentBrightness);
-  
-  if(wasFs){
-    requestAnimationFrame(async()=>{
-      try{
-        if(!document.fullscreenElement && vw.requestFullscreen) await vw.requestFullscreen();
-      }catch(e){}
-    });
+}
+
+async function loadTikTok(url){
+  try{
+    const api=`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`;
+    const res=await fetch(api);
+    const json=await res.json();
+    if(json.code===0 && json.data && json.data.play){
+      const videoUrl=json.data.play;
+      $('videoTitle').textContent=json.data.title||'TikTok Video';
+      $('videoMeta').textContent=json.data.author?.nickname||'';
+      $('videoDesc').textContent='';
+      const el=$('nativePlayer');
+      el.style.display='block';el.crossOrigin='anonymous';
+      el.src=videoUrl;
+      playerMode='native';
+      setupBoost(el);
+      try{await el.play()}catch(_){try{el.muted=true;await el.play()}catch(__){}}
+      updateDownloadBtn(true);
+      currentStreamUrl=videoUrl;
+    }else{
+      toast('❌ No se pudo extraer el TikTok');
+    }
+  }catch(e){
+    toast('❌ Error cargando TikTok');
+    loadEmbedUrl(url);
   }
 }
 
@@ -793,7 +773,7 @@ async function loadYouTube(id,startTime,token){
     }).catch(()=>{});
   
   try{
-    const data=await pipedFetch('/streams/'+id,5000);
+    const data=await pipedFetch('/streams/'+id,8000);
     if(token!==loadToken)return;
     const expectedDuration = parseInt(data.duration) || 0;
     currentVideoData=data;setVideoInfoFromPiped(data);
@@ -811,7 +791,7 @@ async function loadYouTube(id,startTime,token){
   if(token!==loadToken)return;
   
   try{
-    const invRes=await invidiousFetch('/api/v1/videos/'+id,5000);
+    const invRes=await invidiousFetch('/api/v1/videos/'+id,8000);
     if(token!==loadToken)return;
     const data=invRes.data;
     const expectedDuration = parseInt(data.lengthSeconds) || 0;
@@ -840,7 +820,7 @@ async function loadYouTube(id,startTime,token){
   if(token!==loadToken)return;
   
   try{
-    const cobaltUrl=await cobaltFetch(id,5000);
+    const cobaltUrl=await cobaltFetch(id,8000);
     if(token!==loadToken)return;
     if(cobaltUrl){
       const ok=await tryLoadVideoElement(cobaltUrl,startTime,cobaltUrl,0);
@@ -885,7 +865,7 @@ async function tryLoadVideoElement(url,startTime,downloadUrl,expectedDuration){
     let done=false;const fin=v=>{if(!done){done=true;resolve(v)}};
     el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
     el.addEventListener('error',()=>fin(false),{once:true});
-    setTimeout(()=>fin(false),6000);
+    setTimeout(()=>fin(false),8000);
   });
   if(!meta){try{el.removeAttribute('src');el.load()}catch(_){}return false}
   
@@ -896,15 +876,14 @@ async function tryLoadVideoElement(url,startTime,downloadUrl,expectedDuration){
     try{el.removeAttribute('src');el.load()}catch(_){}return false;
   }
   
+  // Anti-LatinAutor: Validación por duración (rechaza placeholders de 1-10s)
   if(expectedDuration > 15 && el.duration > 0 && el.duration < 15){
-    console.log(`[placeholder-short] ${el.duration}s vs ${expectedDuration}s`);
     try{el.removeAttribute('src');el.load()}catch(_){}
     return false;
   }
   if(expectedDuration > 30 && el.duration > 0){
     const ratio = el.duration / expectedDuration;
     if(ratio < 0.6){
-      console.log(`[placeholder-ratio] ${ratio.toFixed(2)}`);
       try{el.removeAttribute('src');el.load()}catch(_){}
       return false;
     }
@@ -935,27 +914,13 @@ async function tryLoadVideoElement(url,startTime,downloadUrl,expectedDuration){
   try{
     await new Promise((resolve,reject)=>{
       if(!el.paused && el.readyState >= 2){resolve();return}
-      const t=setTimeout(()=>reject(new Error('timeout')),6000);
+      const t=setTimeout(()=>reject(new Error('timeout')),8000);
       el.addEventListener('playing',()=>{clearTimeout(t);resolve()},{once:true});
       el.addEventListener('error',()=>{clearTimeout(t);reject(new Error('error'))},{once:true});
     });
   }catch(e){
     try{el.removeAttribute('src');el.load()}catch(_){}
     return false;
-  }
-  
-  if(expectedDuration > 30){
-    await new Promise(r => setTimeout(r, 1500));
-    if(el.ended && el.currentTime < Math.min(15, expectedDuration * 0.1)){
-      console.log(`[ended-early] ${el.currentTime}s de ${expectedDuration}s`);
-      try{el.pause();el.removeAttribute('src');el.load()}catch(_){}
-      return false;
-    }
-    if(el.paused && !isMutedByAutoplay && el.currentTime < 2){
-      console.log(`[unexpected-pause] ${el.currentTime}s`);
-      try{el.removeAttribute('src');el.load()}catch(_){}
-      return false;
-    }
   }
   
   applyVolume(currentVolume);
@@ -967,14 +932,12 @@ async function tryLoadVideoElement(url,startTime,downloadUrl,expectedDuration){
 }
 
 async function tryMpegTS(url,startTime=0){
-  if(!window.mpegts){console.warn('[mpegts] no cargado');return false}
-  let feat;
-  try{feat = mpegts.getFeatureList()}catch(e){return false}
+  if(!window.mpegts){return false}
+  let feat; try{feat = mpegts.getFeatureList()}catch(e){return false}
   if(!feat.mseLivePlayback && !feat.mseH264Playback) return false;
   
   const el=$('nativePlayer');
-  el.crossOrigin='anonymous';
-  el.style.display='block';
+  el.crossOrigin='anonymous'; el.style.display='block';
   $('embedPlayer').style.display='none';
   playerMode='native';
   
@@ -994,8 +957,7 @@ async function tryMpegTS(url,startTime=0){
     mpegtsPlayer.attachMediaElement(el);
     
     const okPromise = new Promise((resolve, reject)=>{
-      let done=false;
-      const finish=(v)=>{if(!done){done=true;resolve(v)}};
+      let done=false; const finish=(v)=>{if(!done){done=true;resolve(v)}};
       const fail=()=>{if(!done){done=true;reject(new Error('fail'))}};
       const timer = setTimeout(()=>fail(), 10000);
       mpegtsPlayer.on(mpegts.Events.MEDIA_INFO, ()=>{clearTimeout(timer);finish(true)});
@@ -1014,15 +976,12 @@ async function tryMpegTS(url,startTime=0){
     });
     
     if(startTime>0) el.currentTime = startTime;
-    if(el.videoWidth && el.videoHeight){
-      currentVideoIsVertical = el.videoHeight > el.videoWidth;
-    }
+    if(el.videoWidth && el.videoHeight) currentVideoIsVertical = el.videoHeight > el.videoWidth;
     setupBoost(el);detectNativeAudioTracks(el);
     updateVolumeMax();applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
     currentStreamUrl = url;updateDownloadBtn(true);
     return true;
   }catch(e){
-    console.warn('[mpegts]', e.message);
     try{ if(mpegtsPlayer){mpegtsPlayer.destroy(); mpegtsPlayer=null} }catch(_){}
     try{ el.removeAttribute('src'); el.load(); }catch(_){}
     return false;
@@ -1032,8 +991,7 @@ async function tryMpegTS(url,startTime=0){
 async function tryNativeDirect(url,startTime=0){
   const el=$('nativePlayer');
   el.crossOrigin='anonymous';el.muted=false;
-  el.style.display='block';
-  $('embedPlayer').style.display='none';
+  el.style.display='block'; $('embedPlayer').style.display='none';
   playerMode='native';
   el.src=url;el.load();
   
@@ -1041,14 +999,12 @@ async function tryNativeDirect(url,startTime=0){
     let done=false;const fin=v=>{if(!done){done=true;resolve(v)}};
     el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
     el.addEventListener('error',()=>fin(false),{once:true});
-    setTimeout(()=>fin(false),6000);
+    setTimeout(()=>fin(false),8000);
   });
   if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
   
   if(startTime>0)el.currentTime=startTime;
-  if(el.videoWidth&&el.videoHeight){
-    currentVideoIsVertical = el.videoHeight > el.videoWidth;
-  }
+  if(el.videoWidth&&el.videoHeight) currentVideoIsVertical = el.videoHeight > el.videoWidth;
   setupBoost(el);detectNativeAudioTracks(el);updateVolumeMax();
   try{await el.play()}catch(_){try{el.removeAttribute('src');el.load()}catch(_){};return false}
   applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
@@ -1057,7 +1013,7 @@ async function tryNativeDirect(url,startTime=0){
 }
 
 async function tryMPEGDASH(url,startTime=0){
-  if(!window.dashjs){console.warn('[dash] no cargado');return false}
+  if(!window.dashjs){return false}
   const el=$('nativePlayer');
   el.style.display='block';el.crossOrigin='anonymous';
   $('embedPlayer').style.display='none';
@@ -1068,9 +1024,7 @@ async function tryMPEGDASH(url,startTime=0){
   try{
     dashPlayer=dashjs.MediaPlayer().create();
     dashPlayer.initialize(el,url,true);
-    dashPlayer.updateSettings({
-      streaming:{delay:{liveDelay:3},buffer:{fastSwitchEnabled:true}}
-    });
+    dashPlayer.updateSettings({streaming:{delay:{liveDelay:3},buffer:{fastSwitchEnabled:true}}});
     if(startTime>0)dashPlayer.seek(startTime);
     
     const ok=await new Promise(resolve=>{
@@ -1088,10 +1042,8 @@ async function tryMPEGDASH(url,startTime=0){
     currentStreamUrl=url;updateDownloadBtn(true);
     return true;
   }catch(e){
-    console.warn('[dash]',e.message);
     try{dashPlayer.reset()}catch(_){}
-    dashPlayer=null;
-    return false;
+    dashPlayer=null; return false;
   }
 }
 
@@ -1109,13 +1061,13 @@ async function loadHLSChannel(ch){
       if(!ok){
         if(tvSeqList.length&&tvSeqIdx>=0&&tvSeqIdx<tvSeqList.length-1){
           setTimeout(()=>playTVByIndex(tvSeqIdx+1),200);
-        }else{toast('No hay más canales disponibles')}
+        }else{toast('Canal no disponible')}
       }
     });
   };
   
-  timers.push(setTimeout(()=>{if(el.readyState<1)fail()},7000));
-  timers.push(setTimeout(()=>{if(el.readyState<3)fail()},10000));
+  timers.push(setTimeout(()=>{if(el.readyState<1)fail()},8000));
+  timers.push(setTimeout(()=>{if(el.readyState<3)fail()},12000));
   el.addEventListener('error',fail,{once:true});
   el.addEventListener('playing',()=>{
     cleanup();handled=true;el.muted=false;applyVolume(currentVolume);
@@ -1125,12 +1077,22 @@ async function loadHLSChannel(ch){
   if(window.Hls&&Hls.isSupported()){
     try{
       hlsInstance=new Hls({enableWorker:true,lowLatencyMode:false,
-        manifestLoadingTimeOut:7000,levelLoadingTimeOut:7000,fragLoadingTimeOut:10000});
+        manifestLoadingTimeOut:8000,levelLoadingTimeOut:8000,fragLoadingTimeOut:12000});
       hlsInstance.loadSource(ch.url);hlsInstance.attachMedia(el);
       hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>{detectHLSAudioTracks();detectHLSSubs()});
       hlsInstance.on(Hls.Events.AUDIO_TRACKS_UPDATED,()=>detectHLSAudioTracks());
       hlsInstance.on(Hls.Events.SUBTITLE_TRACKS_UPDATED,()=>detectHLSSubs());
-      hlsInstance.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal)fail()});
+      hlsInstance.on(Hls.Events.ERROR,(e,d)=>{
+        if(d.fatal){
+            if(d.type === Hls.ErrorTypes.NETWORK_ERROR){
+               // Fallback a proxy si el canal tiene bloqueo CORS
+               const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(ch.url);
+               hlsInstance.loadSource(proxyUrl);
+            } else {
+               fail();
+            }
+        }
+      });
     }catch(e){fail();return}
   }else{
     el.src=ch.url;detectNativeAudioTracks(el);
@@ -1147,21 +1109,14 @@ async function loadHLSChannel(ch){
 }
 
 async function loadDirect(url,startTime){
-  if(/\.ts(\?|#|$)/i.test(url)){
-    if(await tryMpegTS(url, startTime)) return;
-  }
-  if(/\.flv(\?|#|$)/i.test(url) && window.mpegts){
-    if(await tryMpegTS(url, startTime)) return;
-  }
-  if(/\.mpd(\?|#|$)/i.test(url)){
-    if(await tryMPEGDASH(url, startTime)) return;
-  }
+  if(/\.ts(\?|#|$)/i.test(url)){ if(await tryMpegTS(url, startTime)) return; }
+  if(/\.flv(\?|#|$)/i.test(url) && window.mpegts){ if(await tryMpegTS(url, startTime)) return; }
+  if(/\.mpd(\?|#|$)/i.test(url)){ if(await tryMPEGDASH(url, startTime)) return; }
+  
   destroyPlayer();const el=$('nativePlayer');
   el.crossOrigin='anonymous';el.src=url;el.style.display='block';el.load();
   if(startTime>0){await new Promise(r=>{el.addEventListener('loadedmetadata',r,{once:true});setTimeout(r,2000)});el.currentTime=startTime}
-  if(el.videoWidth&&el.videoHeight){
-    currentVideoIsVertical = el.videoHeight > el.videoWidth;
-  }
+  if(el.videoWidth&&el.videoHeight) currentVideoIsVertical = el.videoHeight > el.videoWidth;
   setupBoost(el);playerMode='native';updateVolumeMax();detectNativeAudioTracks(el);
   try{await el.play()}catch(e){try{el.muted=true;await el.play()}catch(_){}}
   applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
@@ -1197,66 +1152,6 @@ $('dlBtn').addEventListener('click',async()=>{
   }
 });
 
-$('fsBtn').addEventListener('click', async () => {
-  try {
-    if (!document.fullscreenElement) {
-      await vw.requestFullscreen();
-      setTimeout(async () => {
-        const orientation = currentVideoIsVertical ? 'portrait' : 'landscape';
-        if (screen.orientation && screen.orientation.lock) {
-          try { await screen.orientation.lock(orientation); } catch(e) {}
-        }
-      }, 300);
-    } else {
-      await document.exitFullscreen();
-    }
-  } catch(e) { console.warn('FS:', e); }
-});
-
-$('exitFsBtn').addEventListener('click', async (e) => {
-  e.stopPropagation();
-  try {
-    if (document.exitFullscreen) await document.exitFullscreen();
-    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-  } catch(e) {}
-});
-
-document.addEventListener('fullscreenchange', () => {
-  const el = $('nativePlayer');
-  if (document.fullscreenElement) {
-    $('exitFsBtn').classList.add('visible');
-    
-    if (playerMode === 'native' && el.style.display === 'block') {
-      const applyFix = () => {
-        if (el.paused || el.readyState < 2) return;
-        const isVOD = el.duration && isFinite(el.duration) && el.duration > 0;
-        if (isVOD) {
-          try { el.currentTime = el.currentTime + 0.001; } catch(_) {}
-        }
-        el.style.opacity = '0.99';
-        requestAnimationFrame(() => { el.style.opacity = ''; });
-        try { window.dispatchEvent(new Event('resize')); } catch(_) {}
-      };
-      setTimeout(applyFix, 50);
-      setTimeout(applyFix, 200);
-      setTimeout(applyFix, 500);
-      setTimeout(applyFix, 1000);
-    }
-    
-    if (screen.orientation && screen.orientation.lock) {
-      const orientation = currentVideoIsVertical ? 'portrait' : 'landscape';
-      setTimeout(() => {
-        screen.orientation.lock(orientation).catch(() => {});
-      }, 300);
-    }
-  } else {
-    $('exitFsBtn').classList.remove('visible');
-    if (screen.orientation && screen.orientation.unlock) {
-      try { screen.orientation.unlock(); } catch(e) {}
-    }
-  }
-});
-
 async function loadTV(ch,idx){
   destroyPlayer();
   if(typeof idx==='number'&&idx>=0)tvSeqIdx=idx;
@@ -1276,36 +1171,19 @@ async function loadTV(ch,idx){
     return toast('No hay más canales disponibles');
   };
   
-  if(isMPD){
-    if(await tryMPEGDASH(url)) return;
-    return skipNext();
-  }
-  
-  if(isMp4 || isOtherVideo){
-    if(await tryNativeDirect(url)) return;
-    if(window.mpegts && await tryMpegTS(url)) return;
-    if(window.Hls && Hls.isSupported()) return loadHLSChannel(ch);
-    return skipNext();
-  }
-  
-  if(isTs){
-    if(await tryMpegTS(url)) return;
-    return skipNext();
-  }
-  
-  if(isFlv && window.mpegts){
-    if(await tryMpegTS(url)) return;
-    return skipNext();
-  }
-  
+  if(isMPD){ if(await tryMPEGDASH(url)) return; return skipNext(); }
+  if(isMp4 || isOtherVideo){ if(await tryNativeDirect(url)) return; if(window.mpegts && await tryMpegTS(url)) return; if(window.Hls && Hls.isSupported()) return loadHLSChannel(ch); return skipNext(); }
+  if(isTs){ if(await tryMpegTS(url)) return; return skipNext(); }
+  if(isFlv && window.mpegts){ if(await tryMpegTS(url)) return; return skipNext(); }
   if(isM3U8) return loadHLSChannel(ch);
   
   if(await tryNativeDirect(url)) return;
   if(window.mpegts && await tryMpegTS(url)) return;
   if(window.Hls && Hls.isSupported()) return loadHLSChannel(ch);
-  if(window.dashjs) {
-    if(await tryMPEGDASH(url)) return;
-  }
+  if(window.dashjs) { if(await tryMPEGDASH(url)) return; }
+  
+  const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+  if(await tryNativeDirect(proxyUrl)) return;
   return skipNext();
 }
 
@@ -1579,11 +1457,22 @@ $('likeBtn').addEventListener('click',()=>{
 async function pickRelated(id){
   if(!relatedCache[id]){
     try{
-      const data=await pipedFetch('/streams/'+id,4000);
+      const invRes = await invidiousFetch('/api/v1/videos/'+id, 5000);
+      if(invRes.data.recommendedVideos){
+        relatedCache[id] = invRes.data.recommendedVideos.map(v=>({
+          id: v.videoId, title: v.title, uploader: v.author
+        })).filter(v=>v.id);
+      }
+    }catch(_){}
+  }
+  if(!relatedCache[id] || !relatedCache[id].length){
+    try{
+      const data=await pipedFetch('/streams/'+id,5000);
       relatedCache[id]=(data.relatedStreams||[]).filter(r=>r.type==='stream'&&r.url)
         .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
     }catch(_){relatedCache[id]=[]}
   }
+  
   let pool=(relatedCache[id]||[]).filter(v=>v.id!==id&&!recentlyPlayed.has(v.id));
   if(pool.length){
     const currentUploader=(currentVideoData?.uploader||currentVideoData?.author||'').toLowerCase().trim();
@@ -1593,16 +1482,8 @@ async function pickRelated(id){
     }
     return pool[Math.floor(Math.random()*pool.length)];
   }
-  try{
-    const data=await pipedFetch('/trending?region=US',4000);
-    const items=Array.isArray(data)?data:(data.items||[]);
-    const trending=items.map(i=>({id:extractId(i.url),title:i.title,uploader:i.uploaderName||i.uploader||''}))
-      .filter(i=>i.id&&i.id!==id&&!recentlyPlayed.has(i.id));
-    if(trending.length)return trending[Math.floor(Math.random()*trending.length)];
-  }catch(_){}
-  const fb=FALLBACK_YT.filter(v=>v.id!==id&&!recentlyPlayed.has(v.id));
-  if(fb.length)return fb[Math.floor(Math.random()*fb.length)];
-  return FALLBACK_YT[Math.floor(Math.random()*FALLBACK_YT.length)];
+  // Si no hay relacionados, devolvemos null para que se detenga y no ponga un video aleatorio sin sentido
+  return null;
 }
 
 async function preloadNext(currentId){
@@ -1628,6 +1509,10 @@ async function handleEnded(){
   if(isAutoAdvancing)return;
   isAutoAdvancing=true;
   try{
+    if(currentSource?.type==='tv' && tvSeqList.length){
+       playTVByIndex(tvSeqIdx+1);
+       return;
+    }
     let next=preloadedNext;
     preloadedNext=null;
     if(!next){
@@ -1636,13 +1521,11 @@ async function handleEnded(){
     if(next&&next.id){
       toast(`▶️ ${next.title?next.title.slice(0,50):'Siguiente'}`,2000);
       await playVideo({type:'youtube',id:next.id},{title:next.title});
+    } else {
+      toast('No hay más videos relacionados');
     }
   }catch(e){
     console.warn('handleEnded error:',e);
-    try{
-      const fb=FALLBACK_YT[Math.floor(Math.random()*FALLBACK_YT.length)];
-      await playVideo({type:'youtube',id:fb.id},{title:fb.title});
-    }catch(_){}
   }finally{
     isAutoAdvancing=false;
   }
