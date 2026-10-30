@@ -50,7 +50,7 @@ header{display:flex;align-items:center;gap:1rem;padding:1rem 2rem;border-bottom:
 .plat-btn.active{background:rgba(6,182,212,.2);color:var(--accent);border-color:var(--accent)}
 main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:2rem;
   display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:2rem;align-items:start;
-  min-width:0;overflow-x:hidden}
+  min-width:0;overflow-x:clip}
 @media(max-width:1024px){main{display:flex;flex-direction:column;gap:1rem;padding:1rem;align-items:stretch}}
 
 .player-sticky{position:sticky;top:0;z-index:50;background:var(--bg);
@@ -66,7 +66,6 @@ main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:2rem;
   border:1px solid var(--border);box-shadow:0 10px 30px rgba(0,0,0,.8),0 0 20px rgba(6,182,212,.1);
   touch-action:pan-y}
 
-/* ════════════ FULLSCREEN — SIN transform, SIN zoom ════════════ */
 .video-wrapper:fullscreen,
 .video-wrapper:-webkit-full-screen,
 .video-wrapper:-moz-full-screen{
@@ -78,7 +77,6 @@ main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:2rem;
   overflow:hidden !important;
 }
 
-/* VIDEO EN FULLSCREEN — SIN transform/zoom, CON object-fit */
 .video-wrapper:fullscreen #nativePlayer,
 .video-wrapper:-webkit-full-screen #nativePlayer{
   position:absolute !important;
@@ -89,7 +87,6 @@ main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:2rem;
   background:#000 !important;
   display:block !important;
   object-fit:contain !important;
-  /* SIN transform, SIN will-change, SIN opacity tricks */
 }
 
 .video-wrapper:fullscreen #embedPlayer,
@@ -160,7 +157,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-ra
   #volVal{font-size:.72rem;min-width:32px}
 }
 
-/* ════════════ INFO BOX — ancho fijo, altura compacta ════════════ */
+/* ════════════ INFO BOX ════════════ */
 .video-info{
   background:var(--panel);backdrop-filter:blur(10px);
   border:1px solid var(--border);border-radius:10px;
@@ -191,34 +188,30 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-ra
   max-height:2000px !important;
   min-height:0 !important;
   overflow-y:auto !important}
-
-/* BOTÓN MOSTRAR MÁS — compacto, tipo link */
 .video-info .toggle-desc{
-  background:none;
-  border:none;
-  color:var(--accent);
-  cursor:pointer;
-  font-size:.72rem;
-  font-weight:600;
-  padding:.1rem 0;
-  margin:0;
-  align-self:flex-start;
-  display:inline-block;
-  text-decoration:underline;
-  line-height:1.2;
-  min-width:0}
+  background:none;border:none;color:var(--accent);cursor:pointer;
+  font-size:.72rem;font-weight:600;padding:.1rem 0;margin:0;
+  align-self:flex-start;display:inline-block;text-decoration:underline;
+  line-height:1.2;min-width:0}
 .video-info .toggle-desc:hover{color:#22d3ee}
 .video-info .toggle-desc:active{opacity:.7}
 
+@media(max-width:1024px){
+  .video-info{padding:.35rem .65rem;gap:.1rem}
+  .video-info h2{font-size:.8rem;line-height:1.15;min-height:.95rem;max-height:.95rem;-webkit-line-clamp:1}
+  .video-info .meta{font-size:.66rem;line-height:1.15;min-height:.75rem;max-height:.75rem}
+  .video-info .desc{font-size:.7rem;line-height:1.2;min-height:.85rem;max-height:.85rem}
+  .video-info .toggle-desc{font-size:.66rem;padding:.05rem 0;line-height:1.1}
+}
 @media(max-width:640px){
-  .video-info{padding:.5rem .65rem;gap:.25rem}
-  .video-info h2{font-size:.85rem;min-height:2.21rem;max-height:2.21rem}
-  .video-info .meta{font-size:.68rem}
-  .video-info .desc{font-size:.72rem;min-height:2.4rem;max-height:2.4rem}
-  .video-info .toggle-desc{font-size:.7rem}
+  .video-info{padding:.3rem .6rem;gap:.08rem}
+  .video-info h2{font-size:.76rem;line-height:1.15;min-height:.92rem;max-height:.92rem}
+  .video-info .meta{font-size:.62rem;line-height:1.15;min-height:.72rem;max-height:.72rem}
+  .video-info .desc{font-size:.66rem;line-height:1.2;min-height:.8rem;max-height:.8rem}
+  .video-info .toggle-desc{font-size:.62rem}
 }
 
-/* ════════════ SIDEBAR — ancho fijo, sin desborde ════════════ */
+/* ════════════ SIDEBAR ════════════ */
 .playlist-sidebar{
   background:var(--panel);backdrop-filter:blur(10px);
   border:1px solid var(--border);border-radius:12px;padding:0;
@@ -253,12 +246,10 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-ra
   overflow-wrap:break-word}
 .tab-pane.active{display:block}
 
-/* Contenido del pane — sin desborde */
 .tab-pane *{min-width:0;max-width:100%;box-sizing:border-box}
 .tab-pane #listsContent,
 .tab-pane #suggestionsList{min-width:0;max-width:100%;overflow-x:hidden}
 
-/* Info de listas — anchos fijos */
 .pl-group{min-width:0;max-width:100%;overflow:hidden}
 .pl-header{min-width:0}
 .pl-header .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -309,6 +300,16 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-ra
 .channel-item .info h4{font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .channel-item .info p{font-size:.7rem;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tv-count{font-size:.72rem;color:var(--muted);padding:.25rem 0}
+
+/* TV sections (collapsible) */
+.tv-sections{display:flex;flex-direction:column;gap:.5rem}
+.tv-sections details{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.tv-sections summary{padding:.6rem .8rem;cursor:pointer;font-weight:600;font-size:.85rem;list-style:none;
+  display:flex;justify-content:space-between;align-items:center;user-select:none;-webkit-tap-highlight-color:transparent}
+.tv-sections summary::-webkit-details-marker{display:none}
+.tv-sections summary::after{content:'▸';transition:transform .2s;color:var(--accent);font-size:.9rem}
+.tv-sections details[open] summary::after{transform:rotate(90deg)}
+.tv-sections details .tv-nav{padding:.5rem;margin:0}
 
 .pl-group{margin-bottom:1rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:rgba(0,0,0,.15);min-width:0}
 .pl-header{display:flex;align-items:center;justify-content:space-between;padding:.65rem .85rem;cursor:pointer;
@@ -763,7 +764,7 @@ async function playVideo(src,opts={}){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   loadYouTube — CON DETECCIÓN DE PLACEHOLDER (fix LatinAutor)
+   loadYouTube — PIPED PRIMERO (proxyUrl), luego Invidious, luego Cobalt
    ═══════════════════════════════════════════════════════════════ */
 async function loadYouTube(id,startTime,token){
   fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`)
@@ -777,7 +778,26 @@ async function loadYouTube(id,startTime,token){
       }
     }).catch(()=>{});
   
-  // 1. Invidious con local=true + detección de placeholder
+  // 1. PIPED primero (proxyUrl más fiable)
+  try{
+    const data=await pipedFetch('/streams/'+id,5000);
+    if(token!==loadToken)return;
+    const expectedDuration = parseInt(data.duration) || 0;
+    currentVideoData=data;setVideoInfoFromPiped(data);
+    if(data.uploader)currentCategory=data.uploader;
+    const vstream = (data.videoStreams||[]).find(s=>s.width&&s.height);
+    if(vstream) currentVideoIsVertical = vstream.height > vstream.width;
+    if(data.relatedStreams){
+      relatedCache[id]=data.relatedStreams.filter(r=>r.type==='stream'&&r.url)
+        .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
+    }
+    const nativeOk=await tryNativeFromData(id,startTime,data,expectedDuration);
+    if(nativeOk)return;
+  }catch(e){console.warn('Piped falló:',e.message)}
+  
+  if(token!==loadToken)return;
+  
+  // 2. INVIDIOUS con local=true
   try{
     const invRes=await invidiousFetch('/api/v1/videos/'+id,5000);
     if(token!==loadToken)return;
@@ -807,26 +827,7 @@ async function loadYouTube(id,startTime,token){
   
   if(token!==loadToken)return;
   
-  // 2. Piped + detección de placeholder
-  try{
-    const data=await pipedFetch('/streams/'+id,5000);
-    if(token!==loadToken)return;
-    const expectedDuration = parseInt(data.duration) || 0;
-    currentVideoData=data;setVideoInfoFromPiped(data);
-    if(data.uploader)currentCategory=data.uploader;
-    const vstream = (data.videoStreams||[]).find(s=>s.width&&s.height);
-    if(vstream) currentVideoIsVertical = vstream.height > vstream.width;
-    if(data.relatedStreams){
-      relatedCache[id]=data.relatedStreams.filter(r=>r.type==='stream'&&r.url)
-        .map(r=>({id:extractId(r.url),title:r.title||'',uploader:r.uploaderName||''})).filter(r=>r.id);
-    }
-    const nativeOk=await tryNativeFromData(id,startTime,data,expectedDuration);
-    if(nativeOk)return;
-  }catch(e){console.warn('Piped falló:',e.message)}
-  
-  if(token!==loadToken)return;
-  
-  // 3. Cobalt (sin expectedDuration porque no lo retorna)
+  // 3. COBALT
   try{
     const cobaltUrl=await cobaltFetch(id,5000);
     if(token!==loadToken)return;
@@ -849,24 +850,25 @@ async function tryNativeFromData(videoId,startTime,data,expectedDuration){
     streams.sort((a,b)=>{const a720=Math.abs((a.height||0)-720),b720=Math.abs((b.height||0)-720);
       if(a720!==b720)return a720-b720;return (b.height||0)-(a.height||0)});
     for(const chosen of streams.slice(0,3)){
-      const playUrl = chosen.proxyUrl || chosen.url;
-      const ok = await tryLoadVideoElement(playUrl, startTime, playUrl, expectedDuration || 0);
-      if(ok) return true;
+      if(chosen.proxyUrl){
+        const ok = await tryLoadVideoElement(chosen.proxyUrl, startTime, chosen.proxyUrl, expectedDuration || 0);
+        if(ok) return true;
+      }
+      if(chosen.url && chosen.url !== chosen.proxyUrl){
+        const ok = await tryLoadVideoElement(chosen.url, startTime, chosen.url, expectedDuration || 0);
+        if(ok) return true;
+      }
     }
     return false;
   }catch(_){return false}
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   tryLoadVideoElement — CON VALIDACIÓN DE DURACIÓN
-   ═══════════════════════════════════════════════════════════════ */
 async function tryLoadVideoElement(url,startTime,downloadUrl,expectedDuration){
   expectedDuration = expectedDuration || 0;
   const el=$('nativePlayer');
   el.muted=false;el.volume=1;el.crossOrigin='anonymous';
   el.src=url;el.load();
   
-  // Esperar metadata
   const meta = await new Promise(resolve=>{
     let done=false;const fin=v=>{if(!done){done=true;resolve(v)}};
     el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
@@ -875,7 +877,6 @@ async function tryLoadVideoElement(url,startTime,downloadUrl,expectedDuration){
   });
   if(!meta){try{el.removeAttribute('src');el.load()}catch(_){}return false}
   
-  // Validar metadata básica
   if(!el.duration || isNaN(el.duration) || el.duration === Infinity){
     try{el.removeAttribute('src');el.load()}catch(_){}return false;
   }
@@ -883,18 +884,16 @@ async function tryLoadVideoElement(url,startTime,downloadUrl,expectedDuration){
     try{el.removeAttribute('src');el.load()}catch(_){}return false;
   }
   
-  // CRÍTICO: Detectar placeholder de LatinAutor
-  // Si el video tiene >30s pero el stream solo dura <15s → es placeholder
-  if(expectedDuration > 30 && el.duration > 0 && el.duration < 15){
-    console.log(`[placeholder] duration=${el.duration}s expected=${expectedDuration}s`);
+  // ══════ Detección estricta de placeholder (LatinAutor-UMPG) ══════
+  if(expectedDuration > 15 && el.duration > 0 && el.duration < 15){
+    console.log(`[placeholder-short] ${el.duration}s vs esperado ${expectedDuration}s`);
     try{el.removeAttribute('src');el.load()}catch(_){}
     return false;
   }
-  // Si la diferencia es >50%, es placeholder (permite videos cortos legítimos)
-  if(expectedDuration > 20 && el.duration > 0){
-    const diff = Math.abs(el.duration - expectedDuration);
-    if(diff > expectedDuration * 0.5){
-      console.log(`[duration mismatch] got ${el.duration}s expected ${expectedDuration}s`);
+  if(expectedDuration > 30 && el.duration > 0){
+    const ratio = el.duration / expectedDuration;
+    if(ratio < 0.6){
+      console.log(`[placeholder-ratio] ${el.duration}s / ${expectedDuration}s = ${ratio.toFixed(2)}`);
       try{el.removeAttribute('src');el.load()}catch(_){}
       return false;
     }
@@ -909,7 +908,6 @@ async function tryLoadVideoElement(url,startTime,downloadUrl,expectedDuration){
   playerMode='native';updateVolumeMax();
   applyBrightness(currentBrightness);
   
-  // Esperar playing real
   try{
     await el.play();
     await new Promise((resolve,reject)=>{
@@ -920,6 +918,17 @@ async function tryLoadVideoElement(url,startTime,downloadUrl,expectedDuration){
   }catch(e){
     try{el.removeAttribute('src');el.load()}catch(_){}
     return false;
+  }
+  
+  // Anti-placeholder congelado (currentTime no avanza)
+  if(expectedDuration > 30){
+    const t0 = el.currentTime;
+    await new Promise(r => setTimeout(r, 1200));
+    if(el.currentTime - t0 < 0.3){
+      console.log(`[frozen] currentTime no avanza (${el.currentTime}s)`);
+      try{el.pause();el.removeAttribute('src');el.load()}catch(_){}
+      return false;
+    }
   }
   
   applyVolume(currentVolume);updatePauseBtn();
@@ -943,8 +952,9 @@ async function tryMpegTS(url,startTime=0){
   if(mpegtsPlayer){try{mpegtsPlayer.destroy()}catch(_){}mpegtsPlayer=null}
   
   try{
+    const isFlv = /\.flv(\?|#|$)/i.test(url);
     mpegtsPlayer = mpegts.createPlayer({
-      type: 'mpegts', isLive: true, url: url
+      type: isFlv ? 'flv' : 'mpegts', isLive: true, url: url
     }, {
       enableWorker: false, enableStashBuffer: false, stashInitialSize: 128,
       lazyLoad: false, autoCleanupSourceBuffer: true,
@@ -975,11 +985,9 @@ async function tryMpegTS(url,startTime=0){
     });
     
     if(startTime>0) el.currentTime = startTime;
-    
     if(el.videoWidth && el.videoHeight){
       currentVideoIsVertical = el.videoHeight > el.videoWidth;
     }
-    
     setupBoost(el);detectNativeAudioTracks(el);
     updateVolumeMax();applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
     currentStreamUrl = url;updateDownloadBtn(true);
@@ -992,28 +1000,93 @@ async function tryMpegTS(url,startTime=0){
   }
 }
 
-async function loadDirect(url,startTime){
-  if(/\.ts(\?|#|$)/i.test(url)){
-    const ok = await tryMpegTS(url, startTime);
-    if(ok) return;
+/* ⭐ NUEVO: intento nativo puro para formatos no reconocidos */
+async function tryNativeDirect(url,startTime=0){
+  const el=$('nativePlayer');
+  el.crossOrigin='anonymous';el.muted=false;
+  el.style.display='block';
+  $('embedPlayer').style.display='none';
+  playerMode='native';
+  el.src=url;el.load();
+  
+  const ok=await new Promise(resolve=>{
+    let done=false;const fin=v=>{if(!done){done=true;resolve(v)}};
+    el.addEventListener('loadedmetadata',()=>fin(true),{once:true});
+    el.addEventListener('error',()=>fin(false),{once:true});
+    setTimeout(()=>fin(false),6000);
+  });
+  if(!ok){try{el.removeAttribute('src');el.load()}catch(_){}return false}
+  
+  if(startTime>0)el.currentTime=startTime;
+  if(el.videoWidth&&el.videoHeight){
+    currentVideoIsVertical = el.videoHeight > el.videoWidth;
   }
-  if(/\.flv(\?|#|$)/i.test(url) && window.mpegts){
-    destroyPlayer();
-    const el=$('nativePlayer');
-    el.style.display='block';el.crossOrigin='anonymous';
+  setupBoost(el);detectNativeAudioTracks(el);updateVolumeMax();
+  try{await el.play()}catch(_){try{el.removeAttribute('src');el.load()}catch(_){};return false}
+  applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
+  currentStreamUrl=url;updateDownloadBtn(true);
+  return true;
+}
+
+/* ⭐ NUEVO: HLS con fallback nativo (Safari reproduce HEVC nativo) */
+async function loadHLSChannel(ch){
+  const el=$('nativePlayer');
+  el.style.display='block';el.crossOrigin='anonymous';el.muted=false;
+  playerMode='native';
+  
+  let handled=false;let timers=[];
+  const cleanup=()=>{timers.forEach(t=>clearTimeout(t));timers=[]};
+  const fail=()=>{
+    if(handled)return;handled=true;cleanup();
+    if(hlsInstance){try{hlsInstance.destroy()}catch(_){}hlsInstance=null}
+    tryNativeDirect(ch.url).then(ok=>{
+      if(!ok){
+        if(tvSeqList.length&&tvSeqIdx>=0&&tvSeqIdx<tvSeqList.length-1){
+          setTimeout(()=>playTVByIndex(tvSeqIdx+1),200);
+        }else{toast('No hay más canales disponibles')}
+      }
+    });
+  };
+  
+  timers.push(setTimeout(()=>{if(el.readyState<1)fail()},7000));
+  timers.push(setTimeout(()=>{if(el.readyState<3)fail()},10000));
+  el.addEventListener('error',fail,{once:true});
+  el.addEventListener('playing',()=>{
+    cleanup();handled=true;el.muted=false;applyVolume(currentVolume);
+    if(el.videoWidth&&el.videoHeight)currentVideoIsVertical=el.videoHeight>el.videoWidth;
+  },{once:true});
+  
+  if(window.Hls&&Hls.isSupported()){
     try{
-      mpegtsPlayer = mpegts.createPlayer({type:'flv', isLive:true, url}, {
-        enableWorker:false, enableStashBuffer:false
-      });
-      mpegtsPlayer.attachMediaElement(el);
-      mpegtsPlayer.load();
-      await mpegtsPlayer.play();
-      setupBoost(el);playerMode='native';updateVolumeMax();
-      currentStreamUrl=url;updateDownloadBtn(true);
-      return;
-    }catch(e){}
+      hlsInstance=new Hls({enableWorker:true,lowLatencyMode:false,
+        manifestLoadingTimeOut:7000,levelLoadingTimeOut:7000,fragLoadingTimeOut:10000});
+      hlsInstance.loadSource(ch.url);hlsInstance.attachMedia(el);
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>{detectHLSAudioTracks();detectHLSSubs()});
+      hlsInstance.on(Hls.Events.AUDIO_TRACKS_UPDATED,()=>detectHLSAudioTracks());
+      hlsInstance.on(Hls.Events.SUBTITLE_TRACKS_UPDATED,()=>detectHLSSubs());
+      hlsInstance.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal)fail()});
+    }catch(e){fail();return}
+  }else{
+    el.src=ch.url;detectNativeAudioTracks(el);
   }
   
+  setupBoost(el);updateVolumeMax();
+  try{await el.play();el.muted=false}catch(e){
+    try{el.muted=true;await el.play();
+      setTimeout(()=>{if(!el.paused){el.muted=false;applyVolume(currentVolume)}},300)
+    }catch(_){}
+  }
+  applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
+  currentStreamUrl=ch.url;updateDownloadBtn(true);
+}
+
+async function loadDirect(url,startTime){
+  if(/\.ts(\?|#|$)/i.test(url)){
+    if(await tryMpegTS(url, startTime)) return;
+  }
+  if(/\.flv(\?|#|$)/i.test(url) && window.mpegts){
+    if(await tryMpegTS(url, startTime)) return;
+  }
   destroyPlayer();const el=$('nativePlayer');
   el.crossOrigin='anonymous';el.src=url;el.style.display='block';el.load();
   if(startTime>0){await new Promise(r=>{el.addEventListener('loadedmetadata',r,{once:true});setTimeout(r,2000)});el.currentTime=startTime}
@@ -1055,12 +1128,11 @@ $('dlBtn').addEventListener('click',async()=>{
   }
 });
 
-/* ════════════ FULLSCREEN — SIN zoom, CON rotación ════════════ */
+/* ════════════ FULLSCREEN ════════════ */
 $('fsBtn').addEventListener('click', async () => {
   try {
     if (!document.fullscreenElement) {
       await vw.requestFullscreen();
-      // Rotación después de un pequeño delay
       setTimeout(async () => {
         const orientation = currentVideoIsVertical ? 'portrait' : 'landscape';
         if (screen.orientation && screen.orientation.lock) {
@@ -1083,11 +1155,8 @@ $('exitFsBtn').addEventListener('click', async (e) => {
 
 document.addEventListener('fullscreenchange', async () => {
   const el = $('nativePlayer');
-  
   if (document.fullscreenElement) {
     $('exitFsBtn').classList.add('visible');
-    
-    // Rotación con reintentos (fullscreen puede tardar en aplicarse)
     const applyOrientation = () => {
       const orientation = currentVideoIsVertical ? 'portrait' : 'landscape';
       if (screen.orientation && screen.orientation.lock) {
@@ -1096,17 +1165,12 @@ document.addEventListener('fullscreenchange', async () => {
     };
     setTimeout(applyOrientation, 100);
     setTimeout(applyOrientation, 500);
-    
-    // Fix pantalla negra en fullscreen para nativo (no mpegts)
     if (!mpegtsPlayer && el.style.display === 'block') {
       setTimeout(() => {
         if (el.paused) return;
-        // Forzar repintado sin tocar el src
         const currentOpacity = el.style.opacity;
         el.style.opacity = '0.99';
-        requestAnimationFrame(() => {
-          el.style.opacity = currentOpacity || '1';
-        });
+        requestAnimationFrame(() => { el.style.opacity = currentOpacity || '1'; });
       }, 150);
     }
   } else {
@@ -1117,104 +1181,46 @@ document.addEventListener('fullscreenchange', async () => {
   }
 });
 
+/* ════════════ loadTV — CON MÁS FORMATOS SOPORTADOS ════════════ */
 async function loadTV(ch,idx){
   destroyPlayer();
   if(typeof idx==='number'&&idx>=0)tvSeqIdx=idx;
   
-  const isM3U8 = /\.m3u8/i.test(ch.url);
-  const isMp4 = /\.mp4/i.test(ch.url);
-  const isTs = /\.ts(\?|#|$)/i.test(ch.url);
-  const isFlv = /\.flv(\?|#|$)/i.test(ch.url);
+  const url = ch.url;
+  const isM3U8 = /\.m3u8/i.test(url);
+  const isMp4  = /\.(mp4|m4v)(\?|#|$)/i.test(url);
+  const isTs   = /\.ts(\?|#|$)/i.test(url);
+  const isFlv  = /\.flv(\?|#|$)/i.test(url);
+  const isOtherVideo = /\.(webm|ogg|ogv|mov|mkv)(\?|#|$)/i.test(url);
   
-  if(!isM3U8 && !isMp4 && !isTs && !isFlv){
+  const skipNext = () => {
     if(tvSeqList.length && tvSeqIdx < tvSeqList.length-1){
       return playTVByIndex(tvSeqIdx+1);
     }
     return toast('Formato no soportado');
+  };
+  
+  if(isMp4 || isOtherVideo){
+    if(await tryNativeDirect(url)) return;
+    if(window.mpegts && await tryMpegTS(url)) return;
+    return skipNext();
   }
   
   if(isTs){
-    const ok = await tryMpegTS(ch.url);
-    if(ok) return;
-    if(tvSeqList.length && tvSeqIdx < tvSeqList.length-1){
-      return playTVByIndex(tvSeqIdx+1);
-    }
-    return toast('Canal no disponible');
+    if(await tryMpegTS(url)) return;
+    return skipNext();
   }
   
   if(isFlv && window.mpegts){
-    const el=$('nativePlayer');
-    el.style.display='block';el.crossOrigin='anonymous';
-    try{
-      mpegtsPlayer = mpegts.createPlayer({type:'flv', isLive:true, url:ch.url}, {
-        enableWorker:false, enableStashBuffer:false
-      });
-      mpegtsPlayer.attachMediaElement(el);
-      mpegtsPlayer.load();
-      await mpegtsPlayer.play();
-      setupBoost(el);playerMode='native';updateVolumeMax();
-      applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
-      currentStreamUrl=ch.url;updateDownloadBtn(true);
-      return;
-    }catch(e){
-      try{if(mpegtsPlayer){mpegtsPlayer.destroy();mpegtsPlayer=null}}catch(_){}
-      if(tvSeqList.length && tvSeqIdx < tvSeqList.length-1) return playTVByIndex(tvSeqIdx+1);
-      return toast('Canal no disponible');
-    }
+    if(await tryMpegTS(url)) return;
+    return skipNext();
   }
   
-  const el=$('nativePlayer');
-  el.style.display='block';el.crossOrigin='anonymous';el.muted=false;
-  playerMode='native';
+  if(isM3U8) return loadHLSChannel(ch);
   
-  let handled=false;
-  let timers=[];
-  const cleanup=()=>{timers.forEach(t=>clearTimeout(t));timers=[]};
-  const fail=()=>{
-    if(handled)return;
-    handled=true;cleanup();
-    if(hlsInstance){try{hlsInstance.destroy()}catch(_){}hlsInstance=null}
-    if(tvSeqList.length&&tvSeqIdx>=0&&tvSeqIdx<tvSeqList.length-1){
-      setTimeout(()=>playTVByIndex(tvSeqIdx+1),200);
-    }else{
-      toast('No hay más canales disponibles');
-    }
-  };
-  
-  timers.push(setTimeout(()=>{if(el.readyState<1)fail()},7000));
-  timers.push(setTimeout(()=>{if(el.readyState<3)fail()},10000));
-  
-  el.addEventListener('error',fail,{once:true});
-  el.addEventListener('playing',()=>{
-    cleanup();handled=true;
-    el.muted=false;applyVolume(currentVolume);
-    if(el.videoWidth && el.videoHeight){
-      currentVideoIsVertical = el.videoHeight > el.videoWidth;
-    }
-  },{once:true});
-  
-  if(isM3U8&&window.Hls&&Hls.isSupported()){
-    try{
-      hlsInstance=new Hls({enableWorker:true,lowLatencyMode:false,
-        manifestLoadingTimeOut:7000,levelLoadingTimeOut:7000,fragLoadingTimeOut:10000});
-      hlsInstance.loadSource(ch.url);hlsInstance.attachMedia(el);
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>{detectHLSAudioTracks();detectHLSSubs()});
-      hlsInstance.on(Hls.Events.AUDIO_TRACKS_UPDATED,()=>detectHLSAudioTracks());
-      hlsInstance.on(Hls.Events.SUBTITLE_TRACKS_UPDATED,()=>detectHLSSubs());
-      hlsInstance.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal)fail()});
-    }catch(e){fail();return}
-  }else{
-    el.src=ch.url;detectNativeAudioTracks(el);
-  }
-  
-  setupBoost(el);updateVolumeMax();
-  try{await el.play();el.muted=false}catch(e){
-    try{el.muted=true;await el.play();
-      setTimeout(()=>{if(!el.paused){el.muted=false;applyVolume(currentVolume)}},300)
-    }catch(_){}
-  }
-  applyVolume(currentVolume);applyBrightness(currentBrightness);updatePauseBtn();
-  currentStreamUrl=ch.url;updateDownloadBtn(true);
+  if(await tryNativeDirect(url)) return;
+  if(window.mpegts && await tryMpegTS(url)) return;
+  return skipNext();
 }
 
 function playTVByIndex(idx){
@@ -1261,7 +1267,6 @@ function showBasicInfo(t,m,d){
   $('videoDesc').classList.remove('expanded');$('toggleDesc').textContent='Mostrar más ▾';
   $('videoInfo').classList.add('visible');availableSubtitles=[];
 }
-
 $('toggleDesc').onclick = function(){
   const d = $('videoDesc');
   const exp = d.classList.toggle('expanded');
@@ -1366,13 +1371,7 @@ async function applySubtitle(code,src){
       toast('Subtítulos desactivados');return;
     }
     const sub=availableSubtitles.find(s=>s.code===code&&s.source==='hls');
-    if(sub){
-      try{
-        hlsInstance.subtitleTrack=sub.idx;
-        hlsInstance.subtitleDisplay=true;
-        toast('💬 '+sub.name);return;
-      }catch(_){}
-    }
+    if(sub){try{hlsInstance.subtitleTrack=sub.idx;hlsInstance.subtitleDisplay=true;toast('💬 '+sub.name);return}catch(_){}}
   }
   const el=$('nativePlayer');
   if(!code){
@@ -1515,9 +1514,7 @@ async function handleEnded(){
     if(next){
       toast(`▶️ ${next.title?next.title.slice(0,50):'Siguiente'}`,2000);
       await playVideo({type:'youtube',id:next.id},{title:next.title});
-    }else{
-      toast('No hay más videos de esta categoría');
-    }
+    }else{toast('No hay más videos de esta categoría')}
   }catch(e){console.warn('handleEnded:',e)}
   finally{isAutoAdvancing=false}
 }
@@ -1529,6 +1526,9 @@ $('nativePlayer').addEventListener('playing',()=>{if(currentVideoId&&playerMode=
 $('nativePlayer').addEventListener('ended',()=>handleEnded());
 $('nativePlayer').addEventListener('play',()=>{isAutoAdvancing=false});
 
+/* ═══════════════════════════════════════════════════════════════
+   PLATAFORMAS / TRENDING / BÚSQUEDA
+   ═══════════════════════════════════════════════════════════════ */
 document.querySelectorAll('.plat-btn[data-plat]').forEach(b=>b.addEventListener('click',()=>switchPlatform(b.dataset.plat)));
 function switchPlatform(plat){
   currentPlatform=plat;
@@ -1731,6 +1731,9 @@ function renderResults(items,type){
 }
 function highlightActive(id){document.querySelectorAll('.video-item').forEach(el=>el.classList.toggle('active',el.dataset.vid===id))}
 
+/* ═══════════════════════════════════════════════════════════════
+   LISTAS / FAVORITOS / HISTORIAL
+   ═══════════════════════════════════════════════════════════════ */
 function getLists(){try{return JSON.parse(localStorage.getItem('nx_lists')||'[]')}catch(_){return[]}}
 function setLists(l){localStorage.setItem('nx_lists',JSON.stringify(l));renderLists()}
 function getHistory(){try{return JSON.parse(localStorage.getItem('nx_history')||'[]')}catch(_){return[]}}
@@ -1815,7 +1818,9 @@ function showAddToList(video,anchor){
     else addToList(video,item.dataset.lid);close()}));
 }
 
-/* ⭐ TV — MÁS PAÍSES Y CATEGORÍAS */
+/* ═══════════════════════════════════════════════════════════════
+   📡 TV EN VIVO — CATEGORIZACIÓN INTELIGENTE + ESPAÑOL + SUBTITULADOS
+   ═══════════════════════════════════════════════════════════════ */
 const TV_COUNTRIES=[
   {code:'mx',name:'México'},{code:'es',name:'España'},{code:'ar',name:'Argentina'},
   {code:'co',name:'Colombia'},{code:'ve',name:'Venezuela'},{code:'cl',name:'Chile'},
@@ -1830,17 +1835,53 @@ const TV_COUNTRIES=[
   {code:'kr',name:'Corea'},{code:'cn',name:'China'},{code:'in',name:'India'},
   {code:'ru',name:'Rusia'},{code:'tr',name:'Turquía'},{code:'eg',name:'Egipto'}
 ];
-const TV_CATEGORIES=[
-  {slug:'news',name:'📰 Noticias'},{slug:'sports',name:'⚽ Deportes'},
-  {slug:'movies',name:'🎬 Películas'},{slug:'kids',name:'🧸 Infantil'},
-  {slug:'music',name:'🎵 Música'},{slug:'documentary',name:'📖 Docs'},
-  {slug:'entertainment',name:'🎭 Entretenimiento'},{slug:'culture',name:'🎨 Cultura'},
-  {slug:'education',name:'📚 Educación'},{slug:'religious',name:'⛪ Religioso'},
-  {slug:'animation',name:'🎨 Animación'},{slug:'series',name:'📺 Series'},
-  {slug:'comedy',name:'😂 Comedia'},{slug:'family',name:'👨‍👩‍👧 Familiar'}
+
+// Categorías con keywords para clasificación inteligente
+const TV_CATEGORY_RULES=[
+  {slug:'news', name:'📰 Noticias', kw:['news','noticias','notícias','cnn','bbc','msnbc','fox news','al jazeera','rt','tvn','mega noticias','telemundo','univision','azteca noticias','foro tv','milenio','el universal','reforma','24 horas','ntn24','ntn 24','telesur','cctv','dw','france 24','sky news','abc news','nbc news','cbs news','euronews','bloomberg','cnbc','trt','rtve 24','canal 24 horas','tn','c5n','crónica','infobae','la nación','el país','el mundo','excelsior','proceso','sinembargo','animal político','aristegui']},
+  {slug:'sports', name:'⚽ Deportes', kw:['sport','sports','deporte','deportes','espn','fox sports','dazn','bein','gol','tyc sports','directv sports','tudn','sky sports','eurosport','olympics','olimpicos','futbol','fútbol','soccer','nba','nfl','mlb','nhl','ufc','boxeo','boxing','motogp','formula 1','f1','tennis','tenis','claro sports','tnt sports','canal del fútbol','aficionados','rcn deportes','win sports','la red','fox deportes']},
+  {slug:'movies', name:'🎬 Películas', kw:['movie','movies','película','peliculas','películas','cine','cinema','hbo','starz','showtime','cinemax','tnt','space','syfy','amc','fx','tcm','sundance','universal','paramount','sony','lionsgate','filmin','movistar cine','sundance tv','golden','cinema platino','cine latino','cine premium','star channel','warner','disney channel','cinema','megacine','canal cine','cinear','studio universal','amc series']},
+  {slug:'kids', name:'🧸 Infantil', kw:['kids','niños','infantil','cartoon','cartoonito','disney junior','disney xd','nick','nickelodeon','nick jr','discovery kids','baby tv','boomerang','pbs kids','clan','canal panda','senal colombia infantil','nat geo kids','pogo','chutti','cbeebies','tooncast','babyfirst']},
+  {slug:'music', name:'🎵 Música', kw:['music','música','musica','mtv','vh1','muchmusic','telehit','bandamax','ritmoson','mtv hits','mtv live','mtv 00s','mtv 80s','mtv 90s','vh1 classic','classic rock','kiss tv','trace','now 80s','4music','viva','deluxe music','clubbing tv','stingray','vevo','music choice']},
+  {slug:'documentary', name:'📖 Documentales', kw:['documentary','documental','documentales','discovery','history','history channel','nat geo','national geographic','natgeo','animal planet','science','investigation discovery','id','travel','travel channel','dmax','h2','curiosity','smithsonian','pbs','arte','canal historia','history latinoamerica','discovery science','discovery turbo','discovery h&h','discovery theater','discovery world','discovery civilization','investigação discovery','crime investigation']},
+  {slug:'entertainment', name:'🎭 Entretenimiento', kw:['entertainment','entretenimiento','comedy central','e!','bravo','tlc','lifetime','own','usa network','tbs','tru tv','revolt','fuse','oxygen','paramount network','freeform','mtv entertainment','warner channel','warner','tnt series','amc','axn','sony','universal','syfy','usa','comet','charge','court tv','kxla']},
+  {slug:'culture', name:'🎨 Cultura', kw:['culture','cultura','arte','art','tv cultura','canal cultura','cultura 24','canal árabe','canal encuentro','antena','rtve cultura','la 2','viaje','viajes','travel and living','hgtv','food network','el gourmet','canal gourmet','bienestar','bienes','mas chic','discovery home','discovery familia','canal historia','film & arts']},
+  {slug:'education', name:'📚 Educación', kw:['education','educación','educativo','educativa','canal educativo','senal colombia','señal colombia','enlace','telesur educativo','unad','universidad','unam','uned','udemy','ted','khan','discovery en la escuela','tv unam','canal 22','canal once','una voz con todos','ingenio tv','aprende en casa','aula','escuela','discovery kids education']},
+  {slug:'religious', name:'⛪ Religioso', kw:['religious','religioso','religiosa','ewtn','cristiano','cristiana','cristo','iglesia','church','católico','catolica','católica','canal cristiano','ewtn españa','ewtn latinoamérica','enlace juvenil','daystar','god tv','tbn','inspiración','oración','aleluya','cristo tv','solidaria tv','maría visión','radio maría','salvation tv']},
+  {slug:'animation', name:'🎨 Animación', kw:['animation','animación','anime','animax','toonami','adult swim','anime planet','cartoon network','animax','crunchyroll','locomotion','animax brasil']},
+  {slug:'series', name:'📺 Series', kw:['series','serie','tnt series','axn','sony','star series','a&e','amc series','syfy series','usa series','universal series','starz series','hbo series','warner series','fox series','space series','showtime series']},
+  {slug:'comedy', name:'😂 Comedia', kw:['comedy','comedia','comedy central','tru tv','tbs comedy','fox comedy','comedy','paramount comedy','mtv comedy']},
+  {slug:'family', name:'👨‍👩‍👧 Familiar', kw:['family','familiar','família','familia','pbs','hallmark','hallmark channel','insp','up tv','gac family','great american family','family channel']}
 ];
 
-function normalizeName(n){return (n||'').toLowerCase().trim().replace(/\s+/g,' ').replace(/[^\w\s]/g,'')}
+function classifyChannel(ch){
+  const hay = ((ch.name||'')+' '+(ch.group||'')).toLowerCase();
+  // Buscar match exacto por keyword
+  for(const rule of TV_CATEGORY_RULES){
+    for(const kw of rule.kw){
+      if(hay.includes(kw)) return rule.slug;
+    }
+  }
+  // Fallback: intentar mapear el group-title si ya viene de iptv-org
+  const g = (ch.group||'').toLowerCase();
+  const groupMap = {
+    'news':'news','noticias':'news','sports':'sports','deportes':'sports',
+    'movies':'movies','peliculas':'movies','películas':'movies','cinema':'movies',
+    'kids':'kids','infantil':'kids','children':'kids',
+    'music':'music','música':'music','musica':'music',
+    'documentary':'documentary','documentales':'documentary',
+    'entertainment':'entertainment','entretenimiento':'entertainment',
+    'culture':'culture','cultura':'culture','education':'education','educación':'education',
+    'religious':'religious','religioso':'religious','animation':'animation','animación':'animation',
+    'series':'series','comedy':'comedy','comedia':'comedy','family':'family','familiar':'family'
+  };
+  for(const [k,v] of Object.entries(groupMap)){
+    if(g.includes(k)) return v;
+  }
+  return 'other';
+}
+
+function normalizeName(n){return (n||'').toLowerCase().trim().replace(/\s+/g,' ').replace(/[^\w\sáéíóúñ]/g,'')}
 function dedupeChannels(channels){
   const map=new Map();
   channels.forEach(ch=>{const key=normalizeName(ch.name);if(!key)return;
@@ -1855,19 +1896,69 @@ function dedupeChannels(channels){
     }});
   return Array.from(map.values());
 }
+
+// Caché de canales españoles para no duplicarlos en subtitulados
+let tvSpanishCache=null;
+
+/* ── Pantalla principal de TV ── */
 function showTVNav(){
   const list=$('suggestionsList');
-  let html=`<input type="text" class="tv-global-search" id="tvGlobalInput" placeholder="🌍 Buscar canal...">
-    <div style="font-weight:600;margin-bottom:.75rem;font-size:.9rem">🌍 Países</div><div class="tv-nav">`;
-  TV_COUNTRIES.forEach(c=>{html+=`<button class="tv-nav-btn" data-type="country" data-code="${c.code}">${c.name}</button>`});
-  html+=`</div><div style="font-weight:600;margin:.75rem 0;font-size:.9rem">📚 Categorías</div><div class="tv-nav">`;
-  TV_CATEGORIES.forEach(c=>{html+=`<button class="tv-nav-btn" data-type="category" data-code="${c.slug}">${c.name}</button>`});
-  html+=`</div>`;
+  let html=`<input type="text" class="tv-global-search" id="tvGlobalInput" placeholder="🌍 Buscar canal por nombre...">`;
+  
+  // Sección 1: Español (con subcategorías)
+  html+=`<div class="tv-sections">
+    <details open>
+      <summary>🇪🇸 Canales en Español</summary>
+      <div class="tv-nav" style="grid-template-columns:1fr">
+        <button class="tv-nav-btn" data-type="lang" data-code="spa">📺 Todos los canales en español</button>
+      </div>
+      <div class="tv-nav" style="padding:0 .5rem .5rem">
+        ${TV_CATEGORY_RULES.map(c=>`<button class="tv-nav-btn" data-type="langcat" data-code="spa" data-cat="${c.slug}">${c.name}</button>`).join('')}
+      </div>
+    </details>
+    
+    <details>
+      <summary>🌐 Subtitulados en Español</summary>
+      <div class="tv-nav" style="grid-template-columns:1fr">
+        <button class="tv-nav-btn" data-type="subs" data-code="all">📺 Todos los subtitulados</button>
+      </div>
+      <div class="tv-nav" style="padding:0 .5rem .5rem">
+        <button class="tv-nav-btn" data-type="subs" data-code="news">📰 Noticias internacionales</button>
+        <button class="tv-nav-btn" data-type="subs" data-code="documentary">📖 Documentales</button>
+        <button class="tv-nav-btn" data-type="subs" data-code="culture">🎨 Cultura</button>
+        <button class="tv-nav-btn" data-type="subs" data-code="education">📚 Educación</button>
+        <button class="tv-nav-btn" data-type="subs" data-code="entertainment">🎭 Entretenimiento</button>
+      </div>
+    </details>
+    
+    <details>
+      <summary>🌍 Por país</summary>
+      <div class="tv-nav">
+        ${TV_COUNTRIES.map(c=>`<button class="tv-nav-btn" data-type="country" data-code="${c.code}">${c.name}</button>`).join('')}
+      </div>
+    </details>
+    
+    <details>
+      <summary>📚 Por categoría (global)</summary>
+      <div class="tv-nav">
+        ${TV_CATEGORY_RULES.map(c=>`<button class="tv-nav-btn" data-type="category" data-code="${c.slug}">${c.name}</button>`).join('')}
+      </div>
+    </details>
+  </div>`;
+  
   list.innerHTML=html;
-  list.querySelectorAll('.tv-nav-btn').forEach(b=>b.addEventListener('click',()=>loadTVList(b.dataset.type,b.dataset.code)));
+  list.querySelectorAll('.tv-nav-btn').forEach(b=>b.addEventListener('click',()=>{
+    const type=b.dataset.type, code=b.dataset.code, cat=b.dataset.cat;
+    if(type==='langcat') loadTVSpanishByCategory(cat);
+    else if(type==='lang') loadTVSpanish();
+    else if(type==='subs') loadTVSubtitled(code);
+    else loadTVList(type,code);
+  }));
   const gi=$('tvGlobalInput');
   gi.addEventListener('keypress',e=>{if(e.key==='Enter'){e.preventDefault();searchAllTV(gi.value)}});
 }
+
+/* ── Carga: canales por país/categoría (original mejorado) ── */
 async function loadTVList(type,code){
   const list=$('suggestionsList');list.innerHTML='<div class="loading-msg">Cargando...</div>';
   const urls=[];
@@ -1875,49 +1966,184 @@ async function loadTVList(type,code){
   else if(type==='category')urls.push(`https://iptv-org.github.io/iptv/categories/${code}.m3u`);
   let all=[];
   await Promise.allSettled(urls.map(async url=>{try{const res=await fetch(url);if(!res.ok)return;const text=await res.text();all=all.concat(parseM3U(text))}catch(_){}}));
-  if(!all.length){list.innerHTML='<div class="empty-msg">❌ Error</div>';return}
-  renderTVChannels(dedupeChannels(all));
+  if(!all.length){list.innerHTML='<div class="empty-msg">❌ Error o sin canales</div>';return}
+  renderTVGroupedByCategory(dedupeChannels(all), type==='country'?`País: ${code.toUpperCase()}`:`Categoría: ${code}`);
 }
-async function searchAllTV(q){
-  q=(q||'').trim();if(!q)return;
-  const list=$('suggestionsList');list.innerHTML='<div class="loading-msg">Buscando...</div>';
-  if(!tvGlobalCache){try{const res=await fetch('https://iptv-org.github.io/iptv/index.m3u');tvGlobalCache=dedupeChannels(parseM3U(await res.text()))}catch(e){list.innerHTML='<div class="empty-msg">❌ Error</div>';return}}
-  const filtered=tvGlobalCache.filter(c=>(c.name||'').toLowerCase().includes(q.toLowerCase()));
-  if(!filtered.length){list.innerHTML='<div class="empty-msg">Sin canales</div>';return}
-  renderTVChannels(filtered);
+
+/* ── NUEVO: canales en español (todos) ── */
+async function loadTVSpanish(){
+  const list=$('suggestionsList');list.innerHTML='<div class="loading-msg">Cargando canales en español...</div>';
+  if(!tvSpanishCache){
+    try{
+      const res=await fetch('https://iptv-org.github.io/iptv/languages/spa.m3u');
+      if(!res.ok)throw 0;
+      const text=await res.text();
+      tvSpanishCache=dedupeChannels(parseM3U(text));
+    }catch(e){list.innerHTML='<div class="empty-msg">❌ Error al cargar canales en español</div>';return}
+  }
+  renderTVGroupedByCategory(tvSpanishCache, '🇪🇸 Canales en Español');
 }
-function parseM3U(text){
-  const lines=text.split('\n'),channels=[];let cur=null;
-  for(const line of lines){const t=line.trim();
-    if(t.startsWith('#EXTINF:')){cur={};const logo=t.match(/tvg-logo="([^"]*)"/);if(logo)cur.logo=logo[1];const group=t.match(/group-title="([^"]*)"/);if(group)cur.group=group[1];const nm=t.match(/,(.+)$/);if(nm)cur.name=nm[1]}
-    else if(t&&!t.startsWith('#')&&cur){cur.url=t;if(cur.name&&cur.url)channels.push(cur);cur=null}}
-  return channels;
+
+/* ── NUEVO: canales en español filtrados por categoría ── */
+async function loadTVSpanishByCategory(catSlug){
+  const list=$('suggestionsList');list.innerHTML='<div class="loading-msg">Cargando...</div>';
+  if(!tvSpanishCache){
+    try{
+      const res=await fetch('https://iptv-org.github.io/iptv/languages/spa.m3u');
+      const text=await res.text();
+      tvSpanishCache=dedupeChannels(parseM3U(text));
+    }catch(e){list.innerHTML='<div class="empty-msg">❌ Error</div>';return}
+  }
+  const filtered = tvSpanishCache.filter(ch=>classifyChannel(ch)===catSlug);
+  if(!filtered.length){list.innerHTML='<div class="empty-msg">Sin canales en esta categoría</div>';return}
+  const catName = TV_CATEGORY_RULES.find(c=>c.slug===catSlug)?.name || catSlug;
+  renderTVChannelsFlat(filtered, `🇪🇸 ${catName}`);
 }
-function renderTVChannels(channels){
-  const playable = channels.filter(c =>
-    /\.m3u8/i.test(c.url) || /\.mp4/i.test(c.url) ||
-    /\.ts(\?|#|$)/i.test(c.url) || /\.flv(\?|#|$)/i.test(c.url)
-  );
-  const priority = (u) => {
-    if(/\.m3u8/i.test(u)) return 0;
-    if(/\.mp4/i.test(u)) return 1;
-    if(/\.ts(\?|#|$)/i.test(u)) return 2;
-    if(/\.flv(\?|#|$)/i.test(u)) return 3;
-    return 4;
-  };
-  playable.sort((a,b)=>priority(a.url)-priority(b.url));
+
+/* ── NUEVO: canales internacionales con subtítulos en español ── */
+async function loadTVSubtitled(cat){
+  const list=$('suggestionsList');list.innerHTML='<div class="loading-msg">Cargando subtitulados...</div>';
   
-  const list=$('suggestionsList');list.innerHTML='';
-  tvSeqList=playable;tvSeqIdx=-1;
+  // Asegurar que tenemos la lista en español para excluir duplicados
+  if(!tvSpanishCache){
+    try{
+      const res=await fetch('https://iptv-org.github.io/iptv/languages/spa.m3u');
+      const text=await res.text();
+      tvSpanishCache=dedupeChannels(parseM3U(text));
+    }catch(_){tvSpanishCache=[]}
+  }
+  const spanishNames = new Set(tvSpanishCache.map(c=>normalizeName(c.name)));
+  
+  // Categorías a cargar: si piden 'all', cargamos las 5 que tienen subs típicamente
+  const catsToLoad = cat==='all' 
+    ? ['news','documentary','culture','education','entertainment']
+    : [cat];
+  
+  const all=[];
+  await Promise.allSettled(catsToLoad.map(async c=>{
+    try{
+      const res=await fetch(`https://iptv-org.github.io/iptv/categories/${c}.m3u`);
+      if(!res.ok)return;
+      const text=await res.text();
+      all.push(...parseM3U(text));
+    }catch(_){}
+  }));
+  
+  // Filtrar: excluir los que ya están en Español
+  const unique = dedupeChannels(all).filter(ch=>!spanishNames.has(normalizeName(ch.name)));
+  
+  if(!unique.length){list.innerHTML='<div class="empty-msg">Sin canales subtitulados disponibles</div>';return}
+  
+  const catLabel = cat==='all' ? 'Todos los subtitulados' : (TV_CATEGORY_RULES.find(x=>x.slug===cat)?.name || cat);
+  renderTVGroupedByCategory(unique, `🌐 Subtitulados en Español — ${catLabel}`);
+}
+
+/* ── RENDER: agrupado por categoría (acordeones internos) ── */
+function renderTVGroupedByCategory(channels, title){
+  const list=$('suggestionsList');
+  
+  const playable = channels.filter(c =>
+    /\.(m3u8|mp4|m4v|ts|flv|webm|ogg|ogv|mov|mkv)(\?|#|$)/i.test(c.url)
+  );
+  if(!playable.length){list.innerHTML='<div class="empty-msg">Sin canales reproducibles</div>';return}
+  
+  // Agrupar por categoría clasificada
+  const groups = {};
+  playable.forEach(ch=>{
+    const cat = classifyChannel(ch);
+    if(!groups[cat]) groups[cat]=[];
+    groups[cat].push(ch);
+  });
+  
+  // Ordenar categorías según TV_CATEGORY_RULES y dejar 'other' al final
+  const orderedCats = TV_CATEGORY_RULES.map(r=>r.slug).filter(s=>groups[s]);
+  if(groups.other) orderedCats.push('other');
+  
+  // Construir UI con barra superior y contenedor
+  tvSeqList = playable; tvSeqIdx = -1;
+  list.innerHTML='';
+  
   const bar=document.createElement('div');bar.className='tv-controls';
-  bar.innerHTML=`<button class="tv-back" id="tvBack">← Volver</button><input type="text" class="tv-search" id="tvSearch" placeholder="Buscar canal..."><div class="tv-count" id="tvCount"></div>`;
+  bar.innerHTML=`<button class="tv-back" id="tvBack">← Volver</button>
+    <div style="font-weight:700;font-size:.9rem;color:var(--accent)">${esc(title)}</div>
+    <input type="text" class="tv-search" id="tvSearch" placeholder="🔍 Filtrar dentro de estos canales...">
+    <div class="tv-count" id="tvCount">${playable.length} canales en ${orderedCats.length} categorías</div>`;
   list.appendChild(bar);
-  const container=document.createElement('div');list.appendChild(container);
-  renderTVItems(container,playable);
+  
+  const container=document.createElement('div');
+  container.style.cssText='display:flex;flex-direction:column;gap:.5rem';
+  list.appendChild(container);
+  
+  // Renderizar acordeones por categoría
+  orderedCats.forEach(catSlug=>{
+    const catInfo = TV_CATEGORY_RULES.find(c=>c.slug===catSlug) || {name:'📺 Otros', slug:'other'};
+    const items = groups[catSlug] || [];
+    if(!items.length) return;
+    
+    const details = document.createElement('details');
+    details.style.cssText='background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;overflow:hidden';
+    // Abrir por defecto solo si hay <=3 categorías en total o si es noticias/sports
+    const shouldOpen = orderedCats.length <= 3 || ['news','sports'].includes(catSlug);
+    if(shouldOpen) details.open = true;
+    
+    details.innerHTML = `<summary style="padding:.6rem .8rem;cursor:pointer;font-weight:600;font-size:.85rem;display:flex;justify-content:space-between;align-items:center;user-select:none">
+      <span>${catInfo.name}</span>
+      <span style="color:var(--muted);font-size:.72rem">${items.length} canales</span>
+    </summary>`;
+    const inner = document.createElement('div');
+    inner.style.cssText='padding:.35rem;max-height:400px;overflow-y:auto';
+    details.appendChild(inner);
+    renderTVItems(inner, items);
+    container.appendChild(details);
+  });
+  
+  // Listeners
   $('tvBack').addEventListener('click',showTVNav);
   const search=$('tvSearch');
-  search.addEventListener('input',()=>{const q=search.value.toLowerCase().trim();const filtered=q?playable.filter(c=>(c.name||'').toLowerCase().includes(q)):playable;tvSeqList=filtered;tvSeqIdx=-1;renderTVItems(container,filtered)});
+  search.addEventListener('input',()=>{
+    const q=search.value.toLowerCase().trim();
+    container.querySelectorAll('details').forEach(det=>{
+      const chs = det.querySelectorAll('.channel-item');
+      let visible=0;
+      chs.forEach(el=>{
+        const name = el.querySelector('h4')?.textContent.toLowerCase()||'';
+        const match = !q || name.includes(q);
+        el.style.display = match ? '' : 'none';
+        if(match) visible++;
+      });
+      det.style.display = visible ? '' : 'none';
+    });
+  });
 }
+
+/* ── RENDER: lista plana (sin agrupar) para categorías filtradas ── */
+function renderTVChannelsFlat(channels, title){
+  const list=$('suggestionsList');
+  const playable = channels.filter(c =>
+    /\.(m3u8|mp4|m4v|ts|flv|webm|ogg|ogv|mov|mkv)(\?|#|$)/i.test(c.url)
+  );
+  if(!playable.length){list.innerHTML='<div class="empty-msg">Sin canales reproducibles</div>';return}
+  
+  tvSeqList = playable; tvSeqIdx = -1;
+  list.innerHTML='';
+  const bar=document.createElement('div');bar.className='tv-controls';
+  bar.innerHTML=`<button class="tv-back" id="tvBack">← Volver</button>
+    <div style="font-weight:700;font-size:.9rem;color:var(--accent)">${esc(title)}</div>
+    <input type="text" class="tv-search" id="tvSearch" placeholder="🔍 Filtrar...">
+    <div class="tv-count" id="tvCount">${playable.length} canales</div>`;
+  list.appendChild(bar);
+  const container=document.createElement('div');list.appendChild(container);
+  renderTVItems(container, playable);
+  $('tvBack').addEventListener('click',showTVNav);
+  const search=$('tvSearch');
+  search.addEventListener('input',()=>{
+    const q=search.value.toLowerCase().trim();
+    const filtered=q?playable.filter(c=>(c.name||'').toLowerCase().includes(q)):playable;
+    tvSeqList=filtered;tvSeqIdx=-1;renderTVItems(container,filtered);
+  });
+}
+
+/* ── RENDER: items de canal (reutilizable) ── */
 function renderTVItems(container,channels){
   container.innerHTML='';
   const count=$('tvCount');if(count)count.textContent=`${channels.length} canales disponibles`;
@@ -1926,11 +2152,38 @@ function renderTVItems(container,channels){
   channels.forEach((ch,i)=>{
     const el=document.createElement('div');el.className='channel-item';el.dataset.idx=i;
     el.innerHTML=`<img src="${esc(ch.logo||'')}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.opacity=0"><div class="info"><h4>${esc(ch.name)}</h4><p>${esc(ch.group||'')}</p></div>`;
-    el.addEventListener('click',()=>playVideo({type:'tv',channel:ch,idx:i},{title:ch.name}));
+    el.addEventListener('click',()=>{
+      // Ajustar el índice real en tvSeqList
+      const realIdx = tvSeqList.findIndex(x => x.url === ch.url);
+      playVideo({type:'tv',channel:ch,idx: realIdx>=0 ? realIdx : i},{title:ch.name});
+    });
     frag.appendChild(el);
   });
   container.appendChild(frag);
 }
+
+/* ── Búsqueda global TV ── */
+async function searchAllTV(q){
+  q=(q||'').trim();if(!q)return;
+  const list=$('suggestionsList');list.innerHTML='<div class="loading-msg">Buscando...</div>';
+  if(!tvGlobalCache){try{const res=await fetch('https://iptv-org.github.io/iptv/index.m3u');tvGlobalCache=dedupeChannels(parseM3U(await res.text()))}catch(e){list.innerHTML='<div class="empty-msg">❌ Error</div>';return}}
+  const filtered=tvGlobalCache.filter(c=>(c.name||'').toLowerCase().includes(q.toLowerCase()));
+  if(!filtered.length){list.innerHTML='<div class="empty-msg">Sin canales</div>';return}
+  renderTVChannelsFlat(filtered, `🔍 Resultados: "${q}"`);
+}
+
+/* ── Parser M3U ── */
+function parseM3U(text){
+  const lines=text.split('\n'),channels=[];let cur=null;
+  for(const line of lines){const t=line.trim();
+    if(t.startsWith('#EXTINF:')){cur={};const logo=t.match(/tvg-logo="([^"]*)"/);if(logo)cur.logo=logo[1];const group=t.match(/group-title="([^"]*)"/);if(group)cur.group=group[1];const nm=t.match(/,(.+)$/);if(nm)cur.name=nm[1]}
+    else if(t&&!t.startsWith('#')&&cur){cur.url=t;if(cur.name&&cur.url)channels.push(cur);cur=null}}
+  return channels;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABS + INICIALIZACIÓN
+   ═══════════════════════════════════════════════════════════════ */
 function switchTab(name){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='pane'+(name==='trending'?'Trending':'Lists')));
